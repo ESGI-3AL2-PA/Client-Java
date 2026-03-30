@@ -5,23 +5,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="43949467-3157-4c46-83c2-e279d7f8691e" name="Changes" comment="Repo initialisation">
-      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/esgi/pa/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
-  </component>
-  <component name="CopilotPersistence">
-    <persistenceIdMap>
-      <entry key="_C:/Users/Yann/Mon Drive/ESGI/Projets/Projet Annuel/Repo/Client-Java" value="3Bfw82J6i7rSXmCzWKr989C1HYE" />
-    </persistenceIdMap>
   </component>
   <component name="CopilotUserSelectedChatMode">
     <option name="chatModeId" value="Agent" />
@@ -32,19 +22,25 @@
       <entry key="agent-panel" value="Claude Haiku 4.5" />
     </selectedModels>
   </component>
+  <component name="FormatOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="OptimizeOnSaveOptions">
+    <option name="myRunOnSave" value="true" />
+  </component>
   <component name="ProjectColorInfo">{
-  &quot;associatedIndex&quot;: 7,
-  &quot;fromUser&quot;: false
+  "associatedIndex": 7,
+  "fromUser": false
 }</component>
   <component name="ProjectId" id="3Bfw82J6i7rSXmCzWKr989C1HYE" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
+  <component name="PropertiesComponent">{
   "keyToString": {
     "Application.Main.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
@@ -53,14 +49,16 @@
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
     "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/Yann/Mon Drive/ESGI/Projets/Projet Annuel/Repo/Client-Java",
     "nodejs_package_manager_path": "npm",
     "onboarding.tips.debug.path": "C:/Users/Yann/Mon Drive/ESGI/Projets/Projet Annuel/Repo/Client-Java/admin-desktop/src/main/java/esgi/pa/Main.java",
-    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "rearrange.code.on.save": "true",
+    "settings.editor.selected.configurable": "actions.on.save",
     "vue.rearranger.settings.migration": "true"
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration default="true" type="JetRunConfigurationType">
       <module name="Client-Java" />
@@ -86,7 +84,19 @@
       <workItem from="1774893369463" duration="561000" />
       <workItem from="1774893941236" duration="438000" />
       <workItem from="1774894395806" duration="46000" />
+      <workItem from="1774894448874" duration="1599000" />
+      <workItem from="1774899917474" duration="458000" />
+      <workItem from="1774901298948" duration="2940000" />
     </task>
+    <task id="LOCAL-00001" summary="Repo initialisation">
+      <option name="closed" value="true" />
+      <created>1774894529759</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1774894529759</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
