@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.VBox?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21"
+            fx:controller="com.connectedneighbours.controller.DashboardController">
+
+    <top>
+        <VBox alignment="CENTER" spacing="20">
+            <Label text="Connected Neighbours — Admin" style="-fx-font-size: 24px; -fx-font-weight: bold;"/>
+            <Button text="Gérer les incidents" onAction="#onIncidentsClick"/>
+            <Button text="Voir les statistiques" onAction="#onStatisticsClick"/>
+        </VBox>
+    </top>
+
+</BorderPane>
