@@ -14,25 +14,31 @@ public class DatabaseManager {
     private static final String SQL_INCIDENTS = """
                 CREATE TABLE IF NOT EXISTS incidents (
                     id          VARCHAR(36)  PRIMARY KEY,
-                    title       VARCHAR(255) NOT NULL,
+                    reporterId  VARCHAR(36)  NOT NULL,
+                    districtId  VARCHAR(36)  NOT NULL,
+                    category    VARCHAR(50)  NOT NULL,
                     description TEXT,
+                    photoUrl    VARCHAR(300),
                     status      VARCHAR(50)  DEFAULT 'OPEN',
-                    priority    VARCHAR(20)  DEFAULT 'NORMAL',
-                    author_id   VARCHAR(36),
+                    assignedTo  VARCHAR(36),
                     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
                     updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
                     synced      BOOLEAN      DEFAULT FALSE
                 )
             """;
-    private static final String SQL_ALERTS = """
-                CREATE TABLE IF NOT EXISTS alerts (
+    private static final String SQL_USERS = """
+              CREATE TABLE IF NOT EXISTS users (
                     id          VARCHAR(36)  PRIMARY KEY,
-                    message     TEXT         NOT NULL,
-                    type        VARCHAR(50),
-                    read        BOOLEAN      DEFAULT FALSE,
+                    email       VARCHAR(100) NOT NULL UNIQUE,
+                    firstName   VARCHAR(100),
+                    lastName    VARCHAR(100),
+                    phone       VARCHAR(100),
+                    role        VARCHAR(20)  NOT NULL,
+                    status      VARCHAR(20),
+                    balance     DOUBLE,
                     created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-                    synced      BOOLEAN      DEFAULT FALSE
-                )
+                    updated_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
+              )
             """;
     private static final String SQL_STATISTICS = """
                 CREATE TABLE IF NOT EXISTS statistics (
@@ -60,10 +66,8 @@ public class DatabaseManager {
 
     public static synchronized Connection getConnection() throws SQLException {
         if (connection == null || connection.isClosed()) {
-            System.out.println(("Ouverture de la connexion H2..."));
             connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
             initSchema();
-            System.out.println("BDD H2 prête.");
         }
         return connection;
     }
@@ -80,10 +84,9 @@ public class DatabaseManager {
     }
 
     private static void initSchema() throws SQLException {
-        System.out.println("Initialisation du schéma...");
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(SQL_INCIDENTS);
-            stmt.executeUpdate(SQL_ALERTS);
+            stmt.executeUpdate(SQL_USERS);
             stmt.executeUpdate(SQL_STATISTICS);
             stmt.executeUpdate(SQL_SYNC_LOG);
         }
