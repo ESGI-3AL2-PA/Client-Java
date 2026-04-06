@@ -1,5 +1,7 @@
 package com.connectedneighbours;
 
+import com.connectedneighbours.repository.DatabaseManager;
+
 import java.sql.SQLException;
 
 public class Launcher {
@@ -9,5 +11,7 @@ public class Launcher {
         } else {
             MainApp.main(args);
         }
+        DatabaseManager.close();
+
     }
 }
