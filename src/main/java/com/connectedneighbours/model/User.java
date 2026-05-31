@@ -12,6 +12,8 @@ public class User {
     private String role;
     private String status;
     private Double balance;
+    private String address;
+    private String districtId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean synced;
@@ -96,6 +98,22 @@ public class User {
         this.balance = balance;
     }
 
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getDistrictId() {
+        return districtId;
+    }
+
+    public void setDistrictId(String districtId) {
+        this.districtId = districtId;
+    }
+
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -123,6 +141,8 @@ public class User {
                 ", role='" + role + '\'' +
                 ", status='" + status + '\'' +
                 ", balance=" + balance +
+                ", address='" + address + '\'' +
+                ", districtId='" + districtId + '\'' +
                 ", synced=" + synced +
                 ", createdAt=" + createdAt +
                 ", updatedAt=" + updatedAt +

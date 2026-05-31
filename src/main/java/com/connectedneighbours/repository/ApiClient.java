@@ -8,7 +8,6 @@ import java.io.IOException;
 
 public class ApiClient {
 
-    private static final String BASE_URL = ApiConfig.BASE_URL;
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     private final OkHttpClient client = new OkHttpClient();
@@ -20,9 +19,17 @@ public class ApiClient {
         this.jwtToken = token;
     }
 
+    private static String buildUrl(String endpoint) {
+        if (endpoint == null || endpoint.isBlank()) {
+            return ApiConfig.getBaseUrl();
+        }
+        String ep = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+        return ApiConfig.getBaseUrl() + ep;
+    }
+
     public String get(String endpoint) throws IOException {
         Request request = new Request.Builder()
-                .url(BASE_URL + endpoint)
+                .url(buildUrl(endpoint))
                 .addHeader("Authorization", "Bearer " + jwtToken)
                 .build();
 
@@ -40,7 +47,7 @@ public class ApiClient {
         String json = mapper.writeValueAsString(body);
 
         Request request = new Request.Builder()
-                .url(BASE_URL + endpoint)
+                .url(buildUrl(endpoint))
                 .addHeader("Authorization", "Bearer " + jwtToken)
                 .post(RequestBody.create(json, JSON))
                 .build();
@@ -55,7 +62,7 @@ public class ApiClient {
         String json = mapper.writeValueAsString(body);
 
         Request request = new Request.Builder()
-                .url(BASE_URL + endpoint)
+                .url(buildUrl(endpoint))
                 .addHeader("Authorization", "Bearer " + jwtToken)
                 .put(RequestBody.create(json, JSON))
                 .build();
@@ -68,7 +75,7 @@ public class ApiClient {
 
     public String delete(String endpoint) throws IOException {
         Request request = new Request.Builder()
-                .url(BASE_URL + endpoint)
+                .url(buildUrl(endpoint))
                 .addHeader("Authorization", "Bearer " + jwtToken)
                 .delete()
                 .build();
