@@ -179,7 +179,7 @@ public class SyncService {
         }
     }
 
-    private void pushLocalUsers() throws SQLException, IOException {
+    private void pushLocalUsers() {
         List<User> allUsers = userRepo.findAll();
 
         for (User user : allUsers) {
@@ -199,7 +199,7 @@ public class SyncService {
         }
     }
 
-    public void pullRemoteUsers() throws IOException, SQLException {
+    public void pullRemoteUsers() throws IOException {
         String json = apiClient.get("/users?source=remote");
         JsonNode root = mapper.readTree(json);
         JsonNode dataNode = root.has("data") ? root.get("data") : root;
