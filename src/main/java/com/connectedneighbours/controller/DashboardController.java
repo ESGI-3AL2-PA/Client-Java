@@ -1,9 +1,11 @@
 package com.connectedneighbours.controller;
 
+import com.connectedneighbours.AppContext;
+import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.Alert;
 import com.connectedneighbours.model.Incident;
+import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.AlertRepository;
-import com.connectedneighbours.repository.ApiClient;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.service.SyncStatus;
@@ -40,7 +42,11 @@ public class DashboardController {
     private Button btnStatistics;
     @FXML
     private Button btnSettings;
-    //  Cartes de stats 
+    @FXML
+    private Button btnLogout;
+    @FXML
+    private Label currentUserLabel;
+    //  Cartes de stats
     @FXML
     private Label statOpenIncidents;
     @FXML
@@ -55,21 +61,19 @@ public class DashboardController {
     private Label statResolvedTrend;
     @FXML
     private Label statUnsynced;
-    //  Tableau des incidents 
+    //  Tableau des incidents
     @FXML
     private TableView<Incident> incidentsTable;
     @FXML
     private TableColumn<Incident, String> colCategory;
     @FXML
-    private TableColumn<Incident, String> colDescription;
-    @FXML
     private TableColumn<Incident, String> colStatus;
     @FXML
     private TableColumn<Incident, java.time.LocalDateTime> colDate;
-    //  Alertes 
+    //  Alertes
     @FXML
     private VBox alertsContainer;
-    //  Barre de statut 
+    //  Barre de statut
     @FXML
     private Circle syncStatusDot;
     @FXML
@@ -78,18 +82,18 @@ public class DashboardController {
     private Label lastSyncLabel;
     @FXML
     private Button syncNowButton;
-    //  Services 
+    //  Services
+    private AppContext appContext;
     private SyncService syncService;
-    private ApiClient apiClient;
     private IncidentRepository incidentRepo;
     private AlertRepository alertRepo;
 
     public DashboardController() {
     }
 
-    public DashboardController(SyncService syncService, ApiClient apiClient) {
+    public DashboardController(AppContext appContext, SyncService syncService) {
+        this.appContext = appContext;
         this.syncService = syncService;
-        this.apiClient = apiClient;
         this.incidentRepo = new IncidentRepository();
         this.alertRepo = new AlertRepository();
     }
@@ -107,9 +111,17 @@ public class DashboardController {
         if (syncService != null) {
             syncService.setStatusListener(this::updateSyncUI);
         }
+        refreshCurrentUserLabel();
     }
 
-    //  Config du TableView 
+    private void refreshCurrentUserLabel() {
+        if (currentUserLabel == null) return;
+        User u = appContext != null ? appContext.getCurrentUser() : null;
+        String txt = (u == null) ? "" : (u.getEmail());
+        currentUserLabel.setText(txt);
+    }
+
+    //  Config du TableView
     private void setupTable() {
         colCategory.setCellValueFactory(cellData -> new ReadOnlyStringWrapper(cellData.getValue().getCategory()));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
@@ -291,6 +303,28 @@ public class DashboardController {
             loadData();
         } catch (Exception e) {
             showError("Impossible d'ouvrir les paramètres : " + e.getMessage());
+        }
+    }
+
+    @FXML
+    public void onLogoutClick() {
+        if (appContext == null) return;
+        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(
+                javafx.scene.control.Alert.AlertType.CONFIRMATION,
+                "Se déconnecter ?",
+                ButtonType.YES, ButtonType.NO
+        );
+        confirm.setTitle("Déconnexion");
+        confirm.setHeaderText(null);
+        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
+
+        appContext.logout();
+        Stage stage = (Stage) btnLogout.getScene().getWindow();
+        Object mainApp = stage.getUserData();
+        if (mainApp instanceof MainApp app) {
+            app.backToLogin();
+        } else {
+            stage.close();
         }
     }
 

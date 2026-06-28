@@ -179,7 +179,7 @@ public class SyncService {
         }
     }
 
-    private void pushLocalUsers() throws SQLException, IOException {
+    private void pushLocalUsers() {
         List<User> allUsers = userRepo.findAll();
 
         for (User user : allUsers) {
@@ -195,11 +195,16 @@ public class SyncService {
                 }
 
             } catch (IOException e) {
+                java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                        java.util.logging.Level.WARNING,
+                        "Failed to sync local user with id " + user.getId(),
+                        e
+                );
             }
         }
     }
 
-    public void pullRemoteUsers() throws IOException, SQLException {
+    public void pullRemoteUsers() throws IOException {
         String json = apiClient.get("/users?source=remote");
         JsonNode root = mapper.readTree(json);
         JsonNode dataNode = root.has("data") ? root.get("data") : root;

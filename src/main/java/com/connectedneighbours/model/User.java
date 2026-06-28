@@ -1,11 +1,16 @@
 package com.connectedneighbours.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User {
 
     private String id;
     private String email;
+    private Boolean emailVerified;
+    private Boolean totpEnabled;
     private String firstName;
     private String lastName;
     private String phone;
@@ -21,10 +26,12 @@ public class User {
     public User() {
     }
 
-    public User(String id, String email, String firstName, String lastName,
+    public User(String id, String email, Boolean emailVerified, Boolean totpEnabled, String firstName, String lastName,
                 String phone, String role, String status, Double balance) {
         this.id = id;
         this.email = email;
+        this.emailVerified = emailVerified;
+        this.totpEnabled = totpEnabled;
         this.firstName = firstName;
         this.lastName = lastName;
         this.phone = phone;
@@ -48,6 +55,22 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public Boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void setEmailVerified(Boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public Boolean getTotpEnabled() {
+        return totpEnabled;
+    }
+
+    public void setTotpEnabled(Boolean totpEnabled) {
+        this.totpEnabled = totpEnabled;
     }
 
     public String getFirstName() {
@@ -135,6 +158,8 @@ public class User {
         return "User{" +
                 "id='" + id + '\'' +
                 ", email='" + email + '\'' +
+                ", emailVerified='" + isEmailVerified() + '\'' +
+                ", totpEnabled=" + totpEnabled +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", phone='" + phone + '\'' +
