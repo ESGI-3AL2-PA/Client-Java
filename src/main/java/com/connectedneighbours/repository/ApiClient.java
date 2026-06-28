@@ -25,7 +25,7 @@ public class ApiClient {
     }
 
     public ApiClient(Supplier<String> tokenSupplier) {
-        this.tokenSupplier = tokenSupplier;
+        this.tokenSupplier = tokenSupplier != null ? tokenSupplier : () -> null;
     }
 
     /**
