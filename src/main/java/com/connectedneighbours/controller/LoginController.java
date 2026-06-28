@@ -74,7 +74,7 @@ public class LoginController {
     private void runLogin() {
         String email = emailField.getText();
         String password = passwordField.getText();
-
+        passwordField.clear();
         if (email == null || email.isBlank() || password == null || password.isBlank()) {
             showError("Email et mot de passe requis.");
             loginButton.setDisable(false);
