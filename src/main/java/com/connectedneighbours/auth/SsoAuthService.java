@@ -1,15 +1,20 @@
 package com.connectedneighbours.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.connectedneighbours.auth.exception.MfaRequiredException;
+import com.connectedneighbours.auth.exception.TokenUnavailableException;
 import com.connectedneighbours.config.AuthConfig;
 import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
+import java.awt.*;
 import java.io.IOException;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -17,20 +22,29 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Service d'authentification SSO contre l'auth-service (port 3001).
- * <p>
- * - access token gardé en mémoire (AtomicReference)
- * - refresh token + csrf_token persistés via PersistentCookieJar (HttpOnly cookie)
- * - getAccessToken() rafraîchit automatiquement si expiré (≤15 min)
- * - logout() révoque côté serveur + purge locale
+ *
+ * <p>Flow desktop (RFC 8252 loopback redirect) :</p>
+ * <ol>
+ *   <li>Démarre un mini serveur HTTP sur 127.0.0.1 (port dynamique).</li>
+ *   <li>Ouvre le navigateur système sur {@code http://localhost:3001/login
+ *       ?redirect_uri=http://127.0.0.1:<port>/callback}.</li>
+ *   <li>Le navigateur gère le formulaire (et le MFA le cas échéant), puis
+ *       redirige vers le callback avec {@code ?access_token=...}.</li>
+ *   <li>Si un cookie refresh valide existe (≤7j), la page tente un
+ *       /auth/refresh silencieux au chargement → SSO transparent.</li>
+ *   <li>{@link #getAccessToken()} renvoie le token s'il est valide, sinon
+ *       lève {@link TokenUnavailableException} pour déclencher un nouveau
+ *       login via le navigateur.</li>
+ * </ol>
+ *
+ * <p>Pas de persistance locale du refresh token : il reste dans le navigateur
+ * (cookie HttpOnly). L'app Java ne garde que l'access token en mémoire.</p>
  */
 public class SsoAuthService {
 
-    private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
-    private static final String CSRF_HEADER = "X-CSRF-Token";
-    private static final String CSRF_COOKIE_NAME = "csrf_token";
+    private static final long LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // 5 min
 
     private final OkHttpClient client;
-    private final PersistentCookieJar cookieJar;
     private final ObjectMapper mapper;
     private final JwtVerifier jwtVerifier;
 
@@ -38,19 +52,9 @@ public class SsoAuthService {
     private final AtomicReference<User> currentUser = new AtomicReference<>();
 
     public SsoAuthService() {
-        this.cookieJar = new PersistentCookieJar();
-        this.client = new OkHttpClient.Builder()
-                .cookieJar(cookieJar)
-                .build();
+        this.client = new OkHttpClient();
         this.mapper = JacksonConfig.get();
         this.jwtVerifier = new JwtVerifier();
-    }
-
-    public SsoAuthService(OkHttpClient client, PersistentCookieJar cookieJar, JwtVerifier jwtVerifier) {
-        this.client = client;
-        this.cookieJar = cookieJar;
-        this.jwtVerifier = jwtVerifier;
-        this.mapper = JacksonConfig.get();
     }
 
     private static String textOrNull(JsonNode node, String field) {
@@ -80,135 +84,71 @@ public class SsoAuthService {
     }
 
     /**
-     * Authentifie l'utilisateur. En cas de succès, stocke l'access token et le user.
-     * Si MFA est requis, lève MfaRequiredException (à gérer par l'appelant).
+     * Ouvre le navigateur sur la page /login de l'auth-service, attend que
+     * l'utilisateur s'y authentifie (ou que le refresh silencieux réussisse),
+     * puis récupère l'access token renvoyé au callback loopback.
+     *
+     * @return l'utilisateur authentifié (fetch depuis /auth/userinfo)
      */
-    public User login(String email, String password) throws IOException {
-        String body = mapper.writeValueAsString(new LoginBody(email, password));
-        try (Response res = post("/auth/login", body, null)) {
-            ResponseBody rb = res.body();
-            String text = rb != null ? rb.string() : "";
-
-            if (res.code() == 202) {
-                JsonNode node = mapper.readTree(text);
-                String mfaToken = node.path("mfa_token").asText();
-                throw new MfaRequiredException(mfaToken);
-            }
-            if (!res.isSuccessful()) {
-                throw new IOException("Login échec (HTTP " + res.code() + "): " + text);
-            }
-
-            JsonNode node = mapper.readTree(text);
-            accessToken.set(node.path("access_token").asText());
-
-            User user = parseUser(node.path("user"));
-            currentUser.set(user);
-            return user;
-        }
-    }
-
-    /**
-     * Complète un login MFA : échange mfa_token + code TOTP contre les tokens réels.
-     */
-    public User completeMfa(String mfaToken, String code) throws IOException {
-        String body = mapper.writeValueAsString(new MfaBody(mfaToken, code));
-        try (Response res = post("/auth/login/mfa", body, null)) {
-            ResponseBody rb = res.body();
-            String text = rb != null ? rb.string() : "";
-            if (!res.isSuccessful()) {
-                throw new IOException("MFA échec (HTTP " + res.code() + "): " + text);
-            }
-            JsonNode node = mapper.readTree(text);
-            accessToken.set(node.path("access_token").asText());
-            User user = parseUser(node.path("user"));
-            currentUser.set(user);
-            return user;
-        }
-    }
-
-    /**
-     * Tente un refresh silencieux à partir du cookie persistant.
-     * Renvoie true si l'access token a pu être renouvelé.
-     */
-    public boolean tryRefresh() {
-        String csrf = cookieJar.findByName(CSRF_COOKIE_NAME);
-        if (csrf == null) return false;
+    public User loginViaBrowser() throws IOException {
+        CallbackServer server = new CallbackServer();
         try {
-            refresh();
-            return true;
+            server.start();
+
+            String redirectUri = server.getCallbackUrl();
+            String loginUrl = AuthConfig.getBaseUrl() + "/login?redirect_uri="
+                    + java.net.URLEncoder.encode(redirectUri,
+                    java.nio.charset.StandardCharsets.UTF_8);
+
+            openBrowser(loginUrl);
+
+            String token = server.waitForToken(LOGIN_TIMEOUT_MS);
+            accessToken.set(token);
+
+            return fetchUserInfo();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Login interrompu", e);
         } catch (Exception e) {
-            return false;
+            if (e instanceof IOException io) throw io;
+            throw new IOException("Login échec: " + e.getMessage(), e);
+        } finally {
+            server.stop();
         }
     }
 
     /**
-     * Appelle /auth/refresh et met à jour l'access token + le csrf (cookie).
-     */
-    public void refresh() throws IOException {
-        String csrf = cookieJar.findByName(CSRF_COOKIE_NAME);
-        try (Response res = post("/auth/refresh", "", csrf)) {
-            ResponseBody rb = res.body();
-            String text = rb != null ? rb.string() : "";
-            if (!res.isSuccessful()) {
-                throw new IOException("Refresh échec (HTTP " + res.code() + "): " + text);
-            }
-            JsonNode node = mapper.readTree(text);
-            accessToken.set(node.path("access_token").asText());
-        }
-    }
-
-    /**
-     * Déconnexion : révoque le refresh token côté serveur, purge les cookies.
+     * Déconnexion locale : efface le token et le user en mémoire.
+     * Le cookie refresh reste dans le navigateur (≤7j) — l'utilisateur peut
+     * le révoquer depuis l'auth-service s'il le souhaite.
      */
     public void logout() {
-        String csrf = cookieJar.findByName(CSRF_COOKIE_NAME);
-        try {
-            post("/auth/logout", "", csrf).close();
-        } catch (IOException ignored) {
-        }
         accessToken.set(null);
         currentUser.set(null);
-        cookieJar.clear();
     }
 
     /**
-     * Renvoie un access token valide, en déclenchant un refresh si expiré.
-     * Lève IOException si le refresh échoue (l'appelant doit renvoyer vers login).
+     * Renvoie un access token valide. Lève {@link TokenUnavailableException}
+     * si le token est expiré ou absent — l'appelant doit alors relancer
+     * {@link #loginViaBrowser()} (le navigateur tentera le refresh silencieux).
      */
-    public String getAccessToken() throws IOException {
+    public String getAccessToken() {
         String token = accessToken.get();
         if (token != null && !isExpired(token)) {
             return token;
         }
-        refresh();
-        return accessToken.get();
+        throw new TokenUnavailableException(
+                new IOException("Access token expiré ou absent — re-login requis"));
     }
 
     /**
-     * Indique si une session existe localement (refresh token persistant ou
-     * access token encore valide).
+     * Récupère l'utilisateur courant via /auth/userinfo.
      */
-    public boolean hasSession() {
-        if (accessToken.get() != null && !isExpired(accessToken.get())) {
-            return true;
-        }
-        return cookieJar.findByName(CSRF_COOKIE_NAME) != null;
-    }
-
-    /**
-     * Indique si l'utilisateur est authentifié avec un access token valide.
-     */
-    public boolean isAuthenticated() {
-        String token = accessToken.get();
-        return token != null && !isExpired(token);
-    }
-
-    public User getCurrentUser() {
-        return currentUser.get();
-    }
-
     public User fetchUserInfo() throws IOException {
-        String token = getAccessToken();
+        String token = accessToken.get();
+        if (token == null) {
+            throw new IOException("Pas d'access token — login d'abord");
+        }
         Request req = new Request.Builder()
                 .url(url("/auth/userinfo"))
                 .addHeader("Authorization", "Bearer " + token)
@@ -227,13 +167,22 @@ public class SsoAuthService {
         }
     }
 
+    public boolean isAuthenticated() {
+        String token = accessToken.get();
+        return token != null && !isExpired(token);
+    }
+
+    public User getCurrentUser() {
+        return currentUser.get();
+    }
+
     public DecodedJWT verifyToken(String token) {
         return jwtVerifier.verify(token);
     }
 
     private boolean isExpired(String token) {
         try {
-            com.auth0.jwt.interfaces.DecodedJWT jwt = com.auth0.jwt.JWT.decode(token);
+            DecodedJWT jwt = com.auth0.jwt.JWT.decode(token);
             Instant exp = jwt.getExpiresAt().toInstant();
             // Marge de 30s pour éviter de rater la limite côté serveur.
             return exp.isBefore(Instant.now().plusSeconds(30));
@@ -242,14 +191,12 @@ public class SsoAuthService {
         }
     }
 
-    private Response post(String endpoint, String body, String csrf) throws IOException {
-        Request.Builder rb = new Request.Builder()
-                .url(url(endpoint))
-                .post(RequestBody.create(body, JSON));
-        if (csrf != null) {
-            rb.addHeader(CSRF_HEADER, csrf);
+    private void openBrowser(String url) throws IOException {
+        if (!Desktop.isDesktopSupported()
+                || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            throw new IOException("Ouverture du navigateur non supportée sur ce système");
         }
-        return client.newCall(rb.build()).execute();
+        Desktop.getDesktop().browse(URI.create(url));
     }
 
     private String url(String endpoint) {
@@ -278,11 +225,5 @@ public class SsoAuthService {
         user.setCreatedAt(parseIsoDate(node.path("createdAt")));
         user.setUpdatedAt(parseIsoDate(node.path("updatedAt")));
         return user;
-    }
-
-    private record LoginBody(String email, String password) {
-    }
-
-    private record MfaBody(String mfa_token, String code) {
     }
 }
