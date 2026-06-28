@@ -1,4 +1,4 @@
-package com.connectedneighbours.auth.exeption;
+package com.connectedneighbours.auth.exception;
 
 /**
  * Levée quand l'access token ne peut être obtenu (refresh échoué, réseau, etc.).

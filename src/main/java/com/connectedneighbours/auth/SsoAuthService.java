@@ -1,7 +1,7 @@
 package com.connectedneighbours.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.connectedneighbours.auth.exeption.MfaRequiredException;
+import com.connectedneighbours.auth.exception.MfaRequiredException;
 import com.connectedneighbours.config.AuthConfig;
 import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.User;

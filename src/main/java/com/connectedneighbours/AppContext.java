@@ -1,7 +1,7 @@
 package com.connectedneighbours;
 
 import com.connectedneighbours.auth.SsoAuthService;
-import com.connectedneighbours.auth.exeption.TokenUnavailableException;
+import com.connectedneighbours.auth.exception.TokenUnavailableException;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
 

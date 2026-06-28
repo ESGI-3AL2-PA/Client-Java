@@ -1,4 +1,4 @@
-package com.connectedneighbours.auth.exeption;
+package com.connectedneighbours.auth.exception;
 
 /**
  * Levée par /auth/login lorsqu'il renvoie 202 (MFA requis).

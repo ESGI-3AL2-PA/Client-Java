@@ -2,7 +2,7 @@ package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.auth.SsoAuthService;
-import com.connectedneighbours.auth.exeption.MfaRequiredException;
+import com.connectedneighbours.auth.exception.MfaRequiredException;
 import com.connectedneighbours.model.User;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
