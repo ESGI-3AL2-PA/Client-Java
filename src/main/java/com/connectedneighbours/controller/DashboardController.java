@@ -117,7 +117,7 @@ public class DashboardController {
     private void refreshCurrentUserLabel() {
         if (currentUserLabel == null) return;
         User u = appContext != null ? appContext.getCurrentUser() : null;
-        String txt = (u == null) ? "" : (u.getFullName());
+        String txt = (u == null) ? "" : (u.getEmail());
         currentUserLabel.setText(txt);
     }
 

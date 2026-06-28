@@ -47,6 +47,10 @@
                     onAction="#onSettingsClick"
                     style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
                            -fx-border-radius: 4; -fx-cursor: hand;"/>
+            <Button fx:id="btnLogout" text="Déconnexion"
+                    onAction="#onLogoutClick"
+                    style="-fx-background-color: #e74c3c; -fx-text-fill: white;
+                           -fx-background-radius: 4; -fx-cursor: hand;"/>
         </HBox>
     </top>
 

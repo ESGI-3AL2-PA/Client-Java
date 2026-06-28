@@ -32,6 +32,17 @@ public class UserRepository {
         }
     }
 
+    public Optional<User> findByEmail(String email) {
+        String sql = "SELECT * FROM users WHERE email = ?";
+        try {
+            List<User> users = DatabaseUtil.executeQuery(sql, this::extractUser, email);
+            return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
     public void save(User user) {
         String sql = "INSERT INTO users (id, email, firstName, lastName, phone, role, status, balance, created_at, updated_at) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";

@@ -2,17 +2,20 @@ package com.connectedneighbours.config;
 
 import java.util.prefs.Preferences;
 
-public class ApiConfig {
+public class AuthConfig {
 
     public static final String DEFAULT_SCHEME = "http";
     public static final String DEFAULT_HOST = "localhost";
-    public static final int DEFAULT_PORT = 3000;
-    private static final Preferences PREFS = Preferences.userNodeForPackage(ApiConfig.class);
-    private static final String KEY_SCHEME = "api.scheme";
-    private static final String KEY_HOST = "api.host";
-    private static final String KEY_PORT = "api.port";
+    public static final int DEFAULT_PORT = 3001;
+    public static final String JWT_ISSUER = "auth-service";
+    public static final String JWT_AUDIENCE = "api";
+    public static final String JWKS_PATH = "/.well-known/jwks.json";
+    private static final Preferences PREFS = Preferences.userNodeForPackage(AuthConfig.class);
+    private static final String KEY_SCHEME = "auth.scheme";
+    private static final String KEY_HOST = "auth.host";
+    private static final String KEY_PORT = "auth.port";
 
-    private ApiConfig() {
+    private AuthConfig() {
     }
 
     public static String getScheme() {
@@ -47,7 +50,6 @@ public class ApiConfig {
             return;
         }
         String normalized = host.trim();
-        // Autorise la saisie d'une IPv6 entre crochets.
         if (normalized.startsWith("[") && normalized.endsWith("]") && normalized.length() > 2) {
             normalized = normalized.substring(1, normalized.length() - 1);
         }
@@ -55,15 +57,12 @@ public class ApiConfig {
     }
 
     public static int getPort() {
-        // On lit la valeur brute pour pouvoir gérer un port vide (=> pas de port dans l'URL).
         String raw = PREFS.get(KEY_PORT, null);
         if (raw == null) {
-            // Non configuré : on conserve le comportement historique (port par défaut).
             return DEFAULT_PORT;
         }
         String trimmed = raw.trim();
         if (trimmed.isEmpty()) {
-            // Configuré volontairement vide : on ignore le port.
             return -1;
         }
         try {
@@ -85,70 +84,20 @@ public class ApiConfig {
         PREFS.put(KEY_PORT, String.valueOf(port));
     }
 
-    /**
-     * Permet de stocker un port optionnel.
-     * <ul>
-     *   <li>"" (ou null/blank) => port ignoré (URL sans :port)</li>
-     *   <li>sinon => doit être un entier 1-65535</li>
-     * </ul>
-     */
-    public static void setPort(String portText) {
-        if (portText == null) {
-            PREFS.put(KEY_PORT, "");
-            return;
-        }
-        String trimmed = portText.trim();
-        if (trimmed.isEmpty()) {
-            PREFS.put(KEY_PORT, "");
-            return;
-        }
-        try {
-            int port = Integer.parseInt(trimmed);
-            setPort(port);
-        } catch (NumberFormatException e) {
-            PREFS.put(KEY_PORT, String.valueOf(DEFAULT_PORT));
-        }
-    }
-
-    /**
-     * Valeur du port telle qu'affichée dans l'UI.
-     * <ul>
-     *   <li>si jamais configuré: retourne le port par défaut</li>
-     *   <li>si configuré vide: retourne ""</li>
-     * </ul>
-     */
-    public static String getPortText() {
-        String raw = PREFS.get(KEY_PORT, null);
-        if (raw == null) {
-            return String.valueOf(DEFAULT_PORT);
-        }
-        return raw.trim();
-    }
-
-    /**
-     * Port à utiliser pour un test de connectivité TCP.
-     * Si le port est vide, on retombe sur 80/443 selon le schéma.
-     */
-    public static int getPortForSocket() {
-        int port = getPort();
-        if (port > 0) {
-            return port;
-        }
-        return "https".equals(getScheme()) ? 443 : 80;
-    }
-
     public static String getBaseUrl() {
         String host = getHost();
-        // IPv6 : il faut des crochets dans une URL (ex: http://[::1]:3000)
         String hostForUrl = host.contains(":") && !(host.startsWith("[") && host.endsWith("]"))
                 ? "[" + host + "]"
                 : host;
         int port = getPort();
         if (port <= 0) {
-            // Port vide => pas de suffixe ":port".
             return getScheme() + "://" + hostForUrl;
         }
         return getScheme() + "://" + hostForUrl + ":" + port;
+    }
+
+    public static String getJwksUrl() {
+        return getBaseUrl() + JWKS_PATH;
     }
 
     public static void resetToDefaults() {
