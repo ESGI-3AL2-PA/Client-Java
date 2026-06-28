@@ -22,15 +22,12 @@ public class AppContext {
     }
 
     /**
-     * Fournit le Bearer token à l'ApiClient. Wrappe l'IOException (checked)
-     * en unchecked car Supplier<String> ne déclare pas d'exception.
+     * Fournit le Bearer token à l'ApiClient. Lève {@link
+     * TokenUnavailableException} si le token est expiré — l'UI doit alors
+     * relancer le login navigateur.
      */
     private String supplyAccessToken() {
-        try {
-            return authService.getAccessToken();
-        } catch (java.io.IOException e) {
-            throw new TokenUnavailableException(e);
-        }
+        return authService.getAccessToken();
     }
 
     public SsoAuthService getAuthService() {
@@ -50,9 +47,13 @@ public class AppContext {
     }
 
     public boolean isAuthenticated() {
-        return authService.isAuthenticated() || authService.hasSession();
+        return authService.isAuthenticated();
     }
 
+    /**
+     * Déconnexion locale : efface le token et le user côté Java. Le cookie
+     * refresh reste dans le navigateur (≤7j).
+     */
     public void logout() {
         authService.logout();
         currentUser = null;

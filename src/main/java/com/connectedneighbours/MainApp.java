@@ -1,18 +1,16 @@
 package com.connectedneighbours;
 
-import com.connectedneighbours.model.User;
 import com.connectedneighbours.controller.DashboardController;
-import com.connectedneighbours.controller.LoginController;
+import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.DatabaseManager;
 import com.connectedneighbours.service.SyncService;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-
-import java.io.IOException;
 
 public class MainApp extends Application {
 
@@ -29,101 +27,84 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         this.appContext = new AppContext();
 
-        // 1) Tentative de refresh silencieux (cookie persistant) sur un thread
-        //    d'arrière-plan : si OK on charge le dashboard, sinon l'écran login.
-        Task<Boolean> bootstrap = new Task<>() {
-            @Override
-            protected Boolean call() {
-                return appContext.getAuthService().tryRefresh();
-            }
-        };
-        bootstrap.setOnSucceeded(e -> {
-            if (Boolean.TRUE.equals(bootstrap.getValue())) {
-                // Charge le user courant puis le dashboard.
-                loadCurrentUserAndShowDashboard();
-            } else {
-                showLogin();
-            }
-        });
-        bootstrap.setOnFailed(e -> showLogin());
+        // Affiche immédiatement une fenêtre d'accueil (le navigateur va
+        // s'ouvrir pour le login). L'utilisateur garde un repère visuel.
+        showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
 
-        Thread t = new Thread(bootstrap, "sso-bootstrap");
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private void loadCurrentUserAndShowDashboard() {
-        Task<User> task = new Task<>() {
+        // Lance le login navigateur sur un thread d'arrière-plan.
+        Task<User> login = new Task<>() {
             @Override
             protected User call() throws Exception {
-                return appContext.getAuthService().fetchUserInfo();
+                return appContext.getAuthService().loginViaBrowser();
             }
         };
-        task.setOnSucceeded(e -> {
-            appContext.setCurrentUser(task.getValue());
+        login.setOnSucceeded(e -> {
+            appContext.setCurrentUser(login.getValue());
             showDashboard();
         });
-        task.setOnFailed(e -> {
-            // Le token a été rafraîchi mais /userinfo échoue → on retente le login.
-            showLogin();
+        login.setOnFailed(e -> {
+            Throwable t = login.getException();
+            String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
+            showWaiting("Connexion échouée",
+                    "Impossible de s'authentifier : " + msg + "\nFermez la fenêtre pour quitter.");
         });
-        Thread t = new Thread(task, "sso-userinfo");
+        Thread t = new Thread(login, "sso-browser-login");
         t.setDaemon(true);
         t.start();
     }
 
-    private void showLogin() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/connectedneighbours/fxml/login.fxml")
-            );
-            Parent root = loader.load();
-            LoginController controller = loader.getController();
-            controller.setAppContext(appContext);
-            controller.setOnSuccess(this::showDashboard);
-
-            Scene scene = new Scene(root, 480, 600);
+    /**
+     * Affiche une fenêtre simple avec un message (en attendant le login
+     * navigateur, ou en cas d'échec).
+     */
+    private void showWaiting(String title, String message) {
+        Platform.runLater(() -> {
+            javafx.scene.control.Label label = new javafx.scene.control.Label(message);
+            label.setWrapText(true);
+            label.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
+            javafx.scene.layout.StackPane root = new javafx.scene.layout.StackPane(label);
+            root.setPadding(new javafx.geometry.Insets(24));
+            root.setStyle("-fx-background-color: #f0f2f5;");
+            Scene scene = new Scene(root, 480, 200);
             applyTheme(scene);
-
-            primaryStage.setTitle("Connexion — Connected Neighbours");
+            primaryStage.setTitle(title + " — Connected Neighbours");
             primaryStage.setScene(scene);
-            primaryStage.setResizable(false);
             primaryStage.show();
-        } catch (IOException e) {
-            throw new RuntimeException("Impossible de charger login.fxml", e);
-        }
+        });
     }
 
     private void showDashboard() {
-        try {
-            // Construit le SyncService maintenant que l'ApiClient a un token supplier.
-            syncService = new SyncService(appContext.getApiClient());
-            syncService.start();
+        Platform.runLater(() -> {
+            try {
+                // Construit le SyncService maintenant que l'ApiClient a un token supplier.
+                syncService = new SyncService(appContext.getApiClient());
+                syncService.start();
 
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/connectedneighbours/fxml/dashboard.fxml")
-            );
-            loader.setControllerFactory(cls -> {
-                if (cls == DashboardController.class)
-                    return new DashboardController(appContext, syncService);
-                try {
-                    return cls.getDeclaredConstructors()[0].newInstance();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-            });
-            Parent root = loader.load();
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/connectedneighbours/fxml/dashboard.fxml")
+                );
+                loader.setControllerFactory(cls -> {
+                    if (cls == DashboardController.class)
+                        return new DashboardController(appContext, syncService);
+                    try {
+                        return cls.getDeclaredConstructors()[0].newInstance();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                Parent root = loader.load();
 
-            Scene scene = new Scene(root, 1280, 800);
-            applyTheme(scene);
+                Scene scene = new Scene(root, 1280, 800);
+                applyTheme(scene);
 
-            primaryStage.setTitle("Connected Neighbours — Admin");
-            primaryStage.setScene(scene);
-            primaryStage.setUserData(this);
-            primaryStage.show();
-        } catch (IOException e) {
-            throw new RuntimeException("Impossible de charger dashboard.fxml", e);
-        }
+                primaryStage.setTitle("Connected Neighbours — Admin");
+                primaryStage.setScene(scene);
+                primaryStage.setUserData(this);
+                primaryStage.show();
+            } catch (Exception e) {
+                throw new RuntimeException("Impossible de charger dashboard.fxml", e);
+            }
+        });
     }
 
     private void applyTheme(Scene scene) {
@@ -136,14 +117,39 @@ public class MainApp extends Application {
     }
 
     /**
-     * Revient à l'écran de login après une déconnexion.
+     * Relance le login navigateur (utilisé par le bouton Déconnexion et en
+     * cas d'expiration du token). Le navigateur tentera le refresh silencieux
+     * si le cookie refresh est encore valide (≤7j) — pas de mot de passe à
+     * retaper dans ce cas.
      */
     public void backToLogin() {
         if (syncService != null) {
             syncService.stop();
             syncService = null;
         }
-        showLogin();
+        appContext.logout();
+
+        showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
+
+        Task<User> login = new Task<>() {
+            @Override
+            protected User call() throws Exception {
+                return appContext.getAuthService().loginViaBrowser();
+            }
+        };
+        login.setOnSucceeded(e -> {
+            appContext.setCurrentUser(login.getValue());
+            showDashboard();
+        });
+        login.setOnFailed(e -> {
+            Throwable t = login.getException();
+            String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
+            showWaiting("Connexion échouée",
+                    "Impossible de s'authentifier : " + msg + "\nFermez la fenêtre pour quitter.");
+        });
+        Thread t = new Thread(login, "sso-browser-login");
+        t.setDaemon(true);
+        t.start();
     }
 
     @Override
