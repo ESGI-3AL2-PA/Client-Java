@@ -195,6 +195,11 @@ public class SyncService {
                 }
 
             } catch (IOException e) {
+                java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                        java.util.logging.Level.WARNING,
+                        "Failed to sync local user with id " + user.getId(),
+                        e
+                );
             }
         }
     }
