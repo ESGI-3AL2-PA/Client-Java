@@ -49,33 +49,6 @@ public class DatabaseUtil {
         }
     }
 
-    /**
-     * Compte le nombre de lignes d'une table avec une clause WHERE optionnelle.
-     *
-     * @param tableName   Nom de la table (doit provenir d'une source de confiance)
-     * @param whereClause Clause WHERE sans le mot-clé (ex: "status = ?")
-     * @param params      Paramètres à insérer dans la clause WHERE
-     * @return Le nombre de lignes
-     * @throws SQLException Si une erreur survient
-     */
-    public static int countRows(String tableName, String whereClause, Object... params) throws SQLException {
-        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM ").append(tableName);
-        if (whereClause != null && !whereClause.trim().isEmpty()) {
-            sql.append(" WHERE ").append(whereClause);
-        }
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            setParameters(stmt, params);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
-            }
-        }
-    }
-
-    public static int getUnsynced(String tableName, Object... params) throws SQLException {
-        return countRows(tableName, "synced = false", params);
-    }
-
     private static void setParameters(PreparedStatement stmt, Object... params) throws SQLException {
         if (params != null) {
             for (int i = 0; i < params.length; i++) {
@@ -88,3 +61,4 @@ public class DatabaseUtil {
         T mapRow(ResultSet rs) throws SQLException;
     }
 }
+

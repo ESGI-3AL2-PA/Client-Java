@@ -8,7 +8,7 @@ import java.sql.Statement;
 
 public class DatabaseManager {
 
-    private static final String DB_URL = "jdbc:h2:./data/admin_db;DB_CLOSE_ON_EXIT=FALSE";
+    private static final String DB_URL = "jdbc:h2:./data/admin_db;AUTO_SERVER=TRUE";
     private static final String DB_USER = "admin";
     private static final String DB_PASS = "";
     private static final String SQL_INCIDENTS = """
@@ -26,20 +26,10 @@ public class DatabaseManager {
                     synced      BOOLEAN      DEFAULT FALSE
                 )
             """;
-    private static final String SQL_ALERTS = """
-                CREATE TABLE IF NOT EXISTS alerts (
-                    id          VARCHAR(36)  PRIMARY KEY,
-                    message     TEXT         NOT NULL,
-                    type        VARCHAR(50),
-                    read        BOOLEAN      DEFAULT FALSE,
-                    created_at  TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
-                    synced      BOOLEAN      DEFAULT FALSE
-                )
-            """;
     private static final String SQL_USERS = """
               CREATE TABLE IF NOT EXISTS users (
                     id          VARCHAR(36)  PRIMARY KEY,
-                    email       VARCHAR(100) NOT NULL,
+                    email       VARCHAR(100) NOT NULL UNIQUE,
                     firstName   VARCHAR(100),
                     lastName    VARCHAR(100),
                     phone       VARCHAR(100),
@@ -99,7 +89,6 @@ public class DatabaseManager {
             stmt.executeUpdate(SQL_USERS);
             stmt.executeUpdate(SQL_STATISTICS);
             stmt.executeUpdate(SQL_SYNC_LOG);
-            stmt.executeUpdate(SQL_ALERTS);
         }
     }
 }
