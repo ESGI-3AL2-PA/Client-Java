@@ -112,8 +112,8 @@ public class SsoAuthService {
      */
     public User completeMfa(String mfaToken, String code) throws IOException {
         String body = mapper.writeValueAsString(new MfaBody(mfaToken, code));
-        Response res = post("/auth/login/mfa", body, null);
-        try (ResponseBody rb = res.body()) {
+        try (Response res = post("/auth/login/mfa", body, null)) {
+            ResponseBody rb = res.body();
             String text = rb != null ? rb.string() : "";
             if (!res.isSuccessful()) {
                 throw new IOException("MFA échec (HTTP " + res.code() + "): " + text);
