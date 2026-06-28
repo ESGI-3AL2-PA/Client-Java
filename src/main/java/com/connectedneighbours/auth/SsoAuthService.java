@@ -85,8 +85,8 @@ public class SsoAuthService {
      */
     public User login(String email, String password) throws IOException {
         String body = mapper.writeValueAsString(new LoginBody(email, password));
-        Response res = post("/auth/login", body, null);
-        try (ResponseBody rb = res.body()) {
+        try (Response res = post("/auth/login", body, null)) {
+            ResponseBody rb = res.body();
             String text = rb != null ? rb.string() : "";
 
             if (res.code() == 202) {
