@@ -1,12 +1,15 @@
 package com.connectedneighbours.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class User {
 
     private String id;
     private String email;
-    public Boolean emailVerified;
+    private Boolean emailVerified;
     private Boolean totpEnabled;
     private String firstName;
     private String lastName;
@@ -54,7 +57,7 @@ public class User {
         this.email = email;
     }
 
-    public Boolean getEmailVerified() {
+    public Boolean isEmailVerified() {
         return emailVerified;
     }
 
@@ -155,7 +158,7 @@ public class User {
         return "User{" +
                 "id='" + id + '\'' +
                 ", email='" + email + '\'' +
-                ", emailVerified-'" + emailVerified + '\'' +
+                ", emailVerified='" + isEmailVerified() + '\'' +
                 ", totpEnabled=" + totpEnabled +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
