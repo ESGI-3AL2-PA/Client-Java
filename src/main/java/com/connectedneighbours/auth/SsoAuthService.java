@@ -146,8 +146,8 @@ public class SsoAuthService {
      */
     public void refresh() throws IOException {
         String csrf = cookieJar.findByName(CSRF_COOKIE_NAME);
-        Response res = post("/auth/refresh", "", csrf);
-        try (ResponseBody rb = res.body()) {
+        try (Response res = post("/auth/refresh", "", csrf)) {
+            ResponseBody rb = res.body();
             String text = rb != null ? rb.string() : "";
             if (!res.isSuccessful()) {
                 throw new IOException("Refresh échec (HTTP " + res.code() + "): " + text);
