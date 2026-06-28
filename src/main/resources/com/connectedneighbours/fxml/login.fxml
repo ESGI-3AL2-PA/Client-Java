@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<StackPane xmlns:fx="http://javafx.com/fxml/1"
+           xmlns="http://javafx.com/javafx/21"
+           fx:controller="com.connectedneighbours.controller.LoginController"
+           style="-fx-background-color: #f0f2f5;">
+
+    <VBox maxWidth="420" maxHeight="520"
+          spacing="16"
+          alignment="TOP_CENTER"
+          style="-fx-background-color: #ffffff;
+                 -fx-background-radius: 12;
+                 -fx-border-color: #e0e0e0;
+                 -fx-border-radius: 12;
+                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 10, 0, 0, 4);">
+        <padding>
+            <Insets top="32" right="32" bottom="32" left="32"/>
+        </padding>
+
+        <!-- Titre -->
+        <Label text="Connected Neighbours"
+               style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+        <Label fx:id="subtitleLabel" text="Connexion administrateur"
+               style="-fx-font-size: 13px; -fx-text-fill: #888888;"/>
+
+        <Region prefHeight="8"/>
+
+        <!-- Email -->
+        <Label text="Email" style="-fx-font-size: 12px; -fx-text-fill: #555;"/>
+        <TextField fx:id="emailField" promptText="john.doe@example.com"
+                   style="-fx-background-radius: 6; -fx-border-color: #d1d5db;"/>
+
+        <!-- Password (masqué en mode MFA) -->
+        <Label fx:id="passwordLabel" text="Mot de passe" style="-fx-font-size: 12px; -fx-text-fill: #555;"/>
+        <PasswordField fx:id="passwordField" promptText="••••••••"
+                       style="-fx-background-radius: 6; -fx-border-color: #d1d5db;"/>
+
+        <!-- Champ code MFA (caché tant que non requis) -->
+        <Label fx:id="mfaLabel" text="Code TOTP (6 chiffres)"
+               visible="false" managed="false"
+               style="-fx-font-size: 12px; -fx-text-fill: #555;"/>
+        <TextField fx:id="mfaCodeField" promptText="123456"
+                   visible="false" managed="false"
+                   style="-fx-background-radius: 6; -fx-border-color: #d1d5db;"/>
+
+        <Region prefHeight="4"/>
+
+        <!-- Bouton principal -->
+        <Button fx:id="loginButton" text="Se connecter"
+                onAction="#onLoginClick"
+                maxWidth="Infinity"
+                style="-fx-background-color: #4a6fa5; -fx-text-fill: white;
+                       -fx-background-radius: 6; -fx-font-weight: bold;
+                       -fx-cursor: hand; -fx-padding: 10 0 10 0;"/>
+
+        <!-- Erreur -->
+        <Label fx:id="errorLabel" text=""
+               visible="false" managed="false"
+               style="-fx-text-fill: #e74c3c; -fx-font-size: 12px;"
+               wrapText="true"/>
+
+        <!-- Lien oublis (optionnel, futur) -->
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label text="Authentification centralisée — auth-service"
+               style="-fx-font-size: 10px; -fx-text-fill: #bbbbbb;"/>
+    </VBox>
+</StackPane>

@@ -12,7 +12,7 @@ import java.util.Optional;
 public class IncidentRepository {
 
     public List<Incident> findAll() {
-        String sql = "SELECT * FROM incidents";
+        String sql = "SELECT * FROM INCIDENTS";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractIncident);
         } catch (SQLException e) {
@@ -21,8 +21,29 @@ public class IncidentRepository {
         }
     }
 
+    public List<Incident> findAll(int limit) {
+        String sql = "SELECT * FROM INCIDENTS LIMIT " + limit;
+        try {
+            return DatabaseUtil.executeQuery(sql, this::extractIncident);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
+    public List<Incident> findByStatus(Incident.Status status) {
+        String sql = "SELECT * FROM INCIDENTS WHERE status = ?";
+        try {
+            return DatabaseUtil.executeQuery(sql, this::extractIncident, status);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
+
     public Optional<Incident> findById(String id) {
-        String sql = "SELECT * FROM incidents WHERE id = ?";
+        String sql = "SELECT * FROM INCIDENTS WHERE id = ?";
         try {
             List<Incident> incidents = DatabaseUtil.executeQuery(sql, this::extractIncident, id);
             return incidents.isEmpty() ? Optional.empty() : Optional.of(incidents.get(0));
@@ -33,7 +54,7 @@ public class IncidentRepository {
     }
 
     public List<Incident> findByStatus(String status) {
-        String sql = "SELECT * FROM incidents WHERE status = ?";
+        String sql = "SELECT * FROM INCIDENTS WHERE status = ?";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractIncident, status);
         } catch (SQLException e) {
@@ -43,7 +64,7 @@ public class IncidentRepository {
     }
 
     public List<Incident> findByReporterId(String reporterId) {
-        String sql = "SELECT * FROM incidents WHERE reporterId = ?";
+        String sql = "SELECT * FROM INCIDENTS WHERE reporterId = ?";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractIncident, reporterId);
         } catch (SQLException e) {
@@ -53,7 +74,7 @@ public class IncidentRepository {
     }
 
     public List<Incident> findByDistrictId(String districtId) {
-        String sql = "SELECT * FROM incidents WHERE districtId = ?";
+        String sql = "SELECT * FROM INCIDENTS WHERE districtId = ?";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractIncident, districtId);
         } catch (SQLException e) {
@@ -62,8 +83,26 @@ public class IncidentRepository {
         }
     }
 
+    public int countByStatus(String status) {
+        try {
+            return DatabaseUtil.countRows("INCIDENTS", "status = ?", status);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    public int countUnsynced() {
+        try {
+            return DatabaseUtil.getUnsynced("incidents");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
     public List<Incident> findUnsynced() {
-        String sql = "SELECT * FROM incidents WHERE synced = false";
+        String sql = "SELECT * FROM INCIDENTS WHERE synced = false";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractIncident);
         } catch (SQLException e) {
@@ -73,7 +112,7 @@ public class IncidentRepository {
     }
 
     public void save(Incident incident) {
-        String sql = "INSERT INTO incidents (id, reporterId, districtId, category, description, photoUrl, status, assignedTo, created_at, updated_at, synced) " +
+        String sql = "INSERT INTO INCIDENTS (id, reporterId, districtId, category, description, photoUrl, status, assignedTo, created_at, updated_at, synced) " +
                 "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             DatabaseUtil.executeUpdate(sql,
@@ -95,7 +134,7 @@ public class IncidentRepository {
     }
 
     public void update(Incident incident) {
-        String sql = "UPDATE incidents SET reporterId = ?, districtId = ?, category = ?, description = ?, photoUrl = ?, status = ?, assignedTo = ?, created_at = ?, updated_at = ?, synced = ? WHERE id = ?";
+        String sql = "UPDATE INCIDENTS SET reporterId = ?, districtId = ?, category = ?, description = ?, photoUrl = ?, status = ?, assignedTo = ?, created_at = ?, updated_at = ?, synced = ? WHERE id = ?";
         try {
             DatabaseUtil.executeUpdate(sql,
                     incident.getReporterId(),
@@ -116,7 +155,7 @@ public class IncidentRepository {
     }
 
     public void delete(String id) {
-        String sql = "DELETE FROM incidents WHERE id = ?";
+        String sql = "DELETE FROM INCIDENTS WHERE id = ?";
         try {
             DatabaseUtil.executeUpdate(sql, id);
         } catch (SQLException e) {
@@ -149,4 +188,3 @@ public class IncidentRepository {
         return incident;
     }
 }
-
