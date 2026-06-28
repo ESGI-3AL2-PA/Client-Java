@@ -36,7 +36,7 @@ public class ApiClient {
     }
 
     public void setTokenSupplier(Supplier<String> tokenSupplier) {
-        this.tokenSupplier = tokenSupplier;
+        this.tokenSupplier = tokenSupplier != null ? tokenSupplier : () -> null;
     }
 
     private String authorizationHeader() {
