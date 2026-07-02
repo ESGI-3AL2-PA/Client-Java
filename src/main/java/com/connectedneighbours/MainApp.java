@@ -27,8 +27,7 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         this.appContext = new AppContext();
 
-        // Affiche immédiatement une fenêtre d'accueil (le navigateur va
-        // s'ouvrir pour le login). L'utilisateur garde un repère visuel.
+        // Affiche immédiatement une fenêtre d'accueil (le navigateur va s'ouvrir pour le login).
         showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
 
         // Lance le login navigateur sur un thread d'arrière-plan.
@@ -54,8 +53,7 @@ public class MainApp extends Application {
     }
 
     /**
-     * Affiche une fenêtre simple avec un message (en attendant le login
-     * navigateur, ou en cas d'échec).
+     * Affiche une fenêtre simple avec un message
      */
     private void showWaiting(String title, String message) {
         Platform.runLater(() -> {
@@ -67,7 +65,7 @@ public class MainApp extends Application {
             root.setStyle("-fx-background-color: #f0f2f5;");
             Scene scene = new Scene(root, 480, 200);
             applyTheme(scene);
-            primaryStage.setTitle(title + " — Connected Neighbours");
+            primaryStage.setTitle(title + " — Connected Neighbours Admin");
             primaryStage.setScene(scene);
             primaryStage.show();
         });

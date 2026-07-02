@@ -118,7 +118,6 @@ public class SyncService {
         try {
             pushLocalIncidents();
             pullRemoteIncidents();
-            pushLocalUsers();
             pullRemoteUsers();
             notifyStatus(SyncStatus.SUCCESS);
         } catch (Exception e) {
@@ -175,31 +174,6 @@ public class SyncService {
                 Incident resolved = resolveConflictIncident(existing.get(), remote);
                 resolved.setSynced(true);
                 incidentRepo.update(resolved);
-            }
-        }
-    }
-
-    private void pushLocalUsers() {
-        List<User> allUsers = userRepo.findAll();
-
-        for (User user : allUsers) {
-            try {
-                String existingJson = apiClient.get("/users/" + user.getId());
-
-                if (existingJson != null) {
-                    User remote = mapper.readValue(existingJson, User.class);
-                    User resolved = resolveConflictUser(user, remote);
-                    apiClient.put("/users/" + resolved.getId(), resolved);
-                } else {
-                    apiClient.post("/users", user);
-                }
-
-            } catch (IOException e) {
-                java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
-                        java.util.logging.Level.WARNING,
-                        "Failed to sync local user with id " + user.getId(),
-                        e
-                );
             }
         }
     }
