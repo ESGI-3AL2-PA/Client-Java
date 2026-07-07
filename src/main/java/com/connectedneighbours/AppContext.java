@@ -2,6 +2,7 @@ package com.connectedneighbours;
 
 import com.connectedneighbours.auth.SsoAuthService;
 import com.connectedneighbours.auth.exception.TokenUnavailableException;
+import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
 
@@ -52,9 +53,11 @@ public class AppContext {
 
     /**
      * Déconnexion locale : efface le token et le user côté Java. Le cookie
-     * refresh reste dans le navigateur (≤7j).
+     * refresh reste dans le navigateur (≤7j). Efface également le dernier utilisateur mémorisé ({@link SessionConfig}) :
+     * le prochain démarrage exigera donc un re-login (skip du SSO désactivé).
      */
     public void logout() {
+        SessionConfig.clearLastUser();
         authService.logout();
         currentUser = null;
     }
