@@ -87,6 +87,7 @@ public class DashboardController {
     private SyncService syncService;
     private IncidentRepository incidentRepo;
     private AlertRepository alertRepo;
+    private boolean reloginRequested = false;
 
     public DashboardController() {
     }
@@ -371,6 +372,19 @@ public class DashboardController {
                 syncStatusLabel.setText("Erreur de synchronisation");
                 syncStatusDot.setFill(Color.RED);
                 syncNowButton.setDisable(false);
+            }
+            case AUTH_REQUIRED -> {
+                syncStatusLabel.setText("Reconnexion requise");
+                syncStatusDot.setFill(Color.ORANGE);
+                syncNowButton.setDisable(true);
+                if (!reloginRequested) {
+                    reloginRequested = true;
+                    Stage stage = (Stage) btnLogout.getScene().getWindow();
+                    Object mainApp = stage.getUserData();
+                    if (mainApp instanceof MainApp app) {
+                        app.backToLogin();
+                    }
+                }
             }
         }
     }

@@ -1,9 +1,11 @@
 package com.connectedneighbours;
 
+import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.controller.DashboardController;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.DatabaseManager;
 import com.connectedneighbours.service.SyncService;
+import com.connectedneighbours.util.DatabaseUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -11,6 +13,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+
+import java.sql.SQLException;
 
 public class MainApp extends Application {
 
@@ -27,6 +31,16 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         this.appContext = new AppContext();
 
+        // Mode offline-first : si un dernier utilisateur est mémorisé
+        // ET que la base H2 locale contient des données --> skip le login SSO et on ouvre directement le dashboard.
+        // L'utilisateur pourra relancer un login navigateur via le bouton "Déconnexion".
+        User restored = SessionConfig.loadLastUser().orElse(null);
+        if (restored != null && hasLocalData()) {
+            appContext.setCurrentUser(restored);
+            showDashboard();
+            return;
+        }
+
         // Affiche immédiatement une fenêtre d'accueil (le navigateur va s'ouvrir pour le login).
         showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
 
@@ -38,7 +52,9 @@ public class MainApp extends Application {
             }
         };
         login.setOnSucceeded(e -> {
-            appContext.setCurrentUser(login.getValue());
+            User user = login.getValue();
+            appContext.setCurrentUser(user);
+            SessionConfig.saveLastUser(user);
             showDashboard();
         });
         login.setOnFailed(e -> {
@@ -50,6 +66,21 @@ public class MainApp extends Application {
         Thread t = new Thread(login, "sso-browser-login");
         t.setDaemon(true);
         t.start();
+    }
+
+    private boolean hasLocalData() {
+        String[] tables = {"INCIDENTS", "ALERTS", "USERS", "STATISTICS", "SYNC_LOG"};
+        for (String table : tables) {
+            try {
+                if (DatabaseUtil.countRows(table, null) > 0) {
+                    return true;
+                }
+            } catch (SQLException ignored) {
+                // Table inexistante ou erreur lecture → on ignore et on
+                // continue ; le fallback est le login navigateur.
+            }
+        }
+        return false;
     }
 
     /**
@@ -136,7 +167,9 @@ public class MainApp extends Application {
             }
         };
         login.setOnSucceeded(e -> {
-            appContext.setCurrentUser(login.getValue());
+            User user = login.getValue();
+            appContext.setCurrentUser(user);
+            SessionConfig.saveLastUser(user);
             showDashboard();
         });
         login.setOnFailed(e -> {

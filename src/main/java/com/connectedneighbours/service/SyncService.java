@@ -120,6 +120,9 @@ public class SyncService {
             pullRemoteIncidents();
             pullRemoteUsers();
             notifyStatus(SyncStatus.SUCCESS);
+        } catch (com.connectedneighbours.auth.exception.TokenUnavailableException e) {
+            // plus d'access token --> relance le login navigateur.
+            notifyStatus(SyncStatus.AUTH_REQUIRED);
         } catch (Exception e) {
             notifyStatus(SyncStatus.ERROR);
         } finally {
