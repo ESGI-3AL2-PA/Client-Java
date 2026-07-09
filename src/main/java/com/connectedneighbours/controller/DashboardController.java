@@ -4,7 +4,6 @@ import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.Alert;
 import com.connectedneighbours.model.Incident;
-import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.AlertRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.service.SyncService;
@@ -12,16 +11,12 @@ import com.connectedneighbours.service.SyncStatus;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.sql.SQLException;
@@ -33,19 +28,9 @@ public class DashboardController {
 
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-    // Header
+    // include Header
     @FXML
-    private Button btnIncidents;
-    @FXML
-    private Button btnUsers;
-    @FXML
-    private Button btnStatistics;
-    @FXML
-    private Button btnSettings;
-    @FXML
-    private Button btnLogout;
-    @FXML
-    private Label currentUserLabel;
+    private HeaderController headerController;
     //  Cartes de stats
     @FXML
     private Label statOpenIncidents;
@@ -112,14 +97,9 @@ public class DashboardController {
         if (syncService != null) {
             syncService.setStatusListener(this::updateSyncUI);
         }
-        refreshCurrentUserLabel();
-    }
-
-    private void refreshCurrentUserLabel() {
-        if (currentUserLabel == null) return;
-        User u = appContext != null ? appContext.getCurrentUser() : null;
-        String txt = (u == null) ? "" : (u.getEmail());
-        currentUserLabel.setText(txt);
+        if (headerController != null) {
+            headerController.setActivePage(Page.DASHBOARD);
+        }
     }
 
     //  Config du TableView
@@ -258,78 +238,14 @@ public class DashboardController {
         alert.showAndWait();
     }
 
-    //  Actions 
+    //  Actions
+
     @FXML
     public void onIncidentsClick() {
-        Stage stage = (Stage) btnIncidents.getScene().getWindow();
+        Stage stage = (Stage) syncNowButton.getScene().getWindow();
         Object mainApp = stage.getUserData();
         if (mainApp instanceof MainApp app) {
             app.showIncidents();
-        }
-    }
-
-    @FXML
-    public void onUsersClick() {
-        System.out.println("[TODO] Ouvrir écran utilisateurs");
-    }
-
-    @FXML
-    public void onStatisticsClick() {
-        System.out.println("[TODO] Ouvrir écran statistiques");
-    }
-
-    @FXML
-    public void onSettingsClick() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/connectedneighbours/fxml/settings.fxml")
-            );
-            Parent root = loader.load();
-
-            Stage stage = new Stage();
-            stage.setTitle("Paramètres — Connected Neighbours");
-            stage.initOwner(btnSettings.getScene().getWindow());
-            stage.initModality(Modality.WINDOW_MODAL);
-
-            Scene scene = new Scene(root, 720, 520);
-            try {
-                scene.getStylesheets().add(
-                        getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
-                );
-            } catch (Exception ignored) {
-                // Thème optionnel
-            }
-
-            stage.setScene(scene);
-            stage.setResizable(false);
-            stage.showAndWait();
-
-            // Rafraîchit les infos après fermeture (au cas où l'URL API aurait changé).
-            loadData();
-        } catch (Exception e) {
-            showError("Impossible d'ouvrir les paramètres : " + e.getMessage());
-        }
-    }
-
-    @FXML
-    public void onLogoutClick() {
-        if (appContext == null) return;
-        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.CONFIRMATION,
-                "Se déconnecter ?",
-                ButtonType.YES, ButtonType.NO
-        );
-        confirm.setTitle("Déconnexion");
-        confirm.setHeaderText(null);
-        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
-
-        appContext.logout();
-        Stage stage = (Stage) btnLogout.getScene().getWindow();
-        Object mainApp = stage.getUserData();
-        if (mainApp instanceof MainApp app) {
-            app.backToLogin();
-        } else {
-            stage.close();
         }
     }
 
@@ -383,7 +299,7 @@ public class DashboardController {
                 syncNowButton.setDisable(true);
                 if (!reloginRequested) {
                     reloginRequested = true;
-                    Stage stage = (Stage) btnLogout.getScene().getWindow();
+                    Stage stage = (Stage) syncNowButton.getScene().getWindow();
                     Object mainApp = stage.getUserData();
                     if (mainApp instanceof MainApp app) {
                         app.backToLogin();

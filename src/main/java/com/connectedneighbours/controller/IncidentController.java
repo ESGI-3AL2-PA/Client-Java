@@ -3,7 +3,6 @@ package com.connectedneighbours.controller;
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.Incident;
-import com.connectedneighbours.model.User;
 import com.connectedneighbours.service.IncidentService;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.service.SyncStatus;
@@ -11,10 +10,7 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
@@ -34,38 +30,51 @@ public class IncidentController {
     private static final DateTimeFormatter DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    // Header 
-    @FXML private Button btnDashboard;
-    @FXML private Button btnIncidents;
-    @FXML private Button btnUsers;
-    @FXML private Button btnStatistics;
-    @FXML private Button btnSettings;
-    @FXML private Button btnLogout;
-    @FXML private Label currentUserLabel;
+    // include Header
+    @FXML
+    private HeaderController headerController;
 
-    // Filtres 
-    @FXML private ComboBox<String> filterStatus;
-    @FXML private ComboBox<String> filterCategory;
-    @FXML private Label countLabel;
+    // Filtres
+    @FXML
+    private ComboBox<String> filterStatus;
+    @FXML
+    private ComboBox<String> filterCategory;
+    @FXML
+    private Label countLabel;
 
     // Table 
-    @FXML private TableView<Incident> incidentsTable;
-    @FXML private TableColumn<Incident, String> colId;
-    @FXML private TableColumn<Incident, String> colCategory;
-    @FXML private TableColumn<Incident, String> colDescription;
-    @FXML private TableColumn<Incident, String> colStatus;
-    @FXML private TableColumn<Incident, String> colReporter;
-    @FXML private TableColumn<Incident, String> colDistrict;
-    @FXML private TableColumn<Incident, String> colAssignedTo;
-    @FXML private TableColumn<Incident, LocalDateTime> colCreatedAt;
-    @FXML private TableColumn<Incident, LocalDateTime> colUpdatedAt;
-    @FXML private TableColumn<Incident, String> colSynced;
+    @FXML
+    private TableView<Incident> incidentsTable;
+    @FXML
+    private TableColumn<Incident, String> colId;
+    @FXML
+    private TableColumn<Incident, String> colCategory;
+    @FXML
+    private TableColumn<Incident, String> colDescription;
+    @FXML
+    private TableColumn<Incident, String> colStatus;
+    @FXML
+    private TableColumn<Incident, String> colReporter;
+    @FXML
+    private TableColumn<Incident, String> colDistrict;
+    @FXML
+    private TableColumn<Incident, String> colAssignedTo;
+    @FXML
+    private TableColumn<Incident, LocalDateTime> colCreatedAt;
+    @FXML
+    private TableColumn<Incident, LocalDateTime> colUpdatedAt;
+    @FXML
+    private TableColumn<Incident, String> colSynced;
 
     // Barre de sync 
-    @FXML private Circle syncStatusDot;
-    @FXML private Label syncStatusLabel;
-    @FXML private Label lastSyncLabel;
-    @FXML private Button syncNowButton;
+    @FXML
+    private Circle syncStatusDot;
+    @FXML
+    private Label syncStatusLabel;
+    @FXML
+    private Label lastSyncLabel;
+    @FXML
+    private Button syncNowButton;
 
     // Services 
     private AppContext appContext;
@@ -73,7 +82,9 @@ public class IncidentController {
     private IncidentService incidentService;
     private boolean reloginRequested = false;
 
-    /** Master list (non-filtrée) */
+    /**
+     * Master list (non-filtrée)
+     */
     private List<Incident> allIncidents;
 
     public IncidentController() {
@@ -85,7 +96,7 @@ public class IncidentController {
         this.incidentService = new IncidentService();
     }
 
-    // Initialisation 
+    // Initialisation
     @FXML
     public void initialize() {
         if (incidentService == null) {
@@ -97,17 +108,12 @@ public class IncidentController {
         if (syncService != null) {
             syncService.setStatusListener(this::updateSyncUI);
         }
-        refreshCurrentUserLabel();
+        if (headerController != null) {
+            headerController.setActivePage(Page.INCIDENTS);
+        }
     }
 
-    private void refreshCurrentUserLabel() {
-        if (currentUserLabel == null) return;
-        User u = appContext != null ? appContext.getCurrentUser() : null;
-        String txt = (u == null) ? "" : u.getEmail();
-        currentUserLabel.setText(txt);
-    }
-
-    // Configuration de la table 
+    // Configuration de la table
     private void setupTable() {
         // ID (tronqué aux 8 premiers caractères)
         colId.setCellValueFactory(cell -> {
@@ -506,81 +512,6 @@ public class IncidentController {
         };
     }
 
-    // Navigation 
-
-    @FXML
-    public void onDashboardClick() {
-        Stage stage = (Stage) btnDashboard.getScene().getWindow();
-        Object mainApp = stage.getUserData();
-        if (mainApp instanceof MainApp app) {
-            app.showDashboard();
-        }
-    }
-
-    @FXML
-    public void onUsersClick() {
-        System.out.println("[TODO] Ouvrir écran utilisateurs");
-    }
-
-    @FXML
-    public void onStatisticsClick() {
-        System.out.println("[TODO] Ouvrir écran statistiques");
-    }
-
-    @FXML
-    public void onSettingsClick() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/connectedneighbours/fxml/settings.fxml")
-            );
-            Parent root = loader.load();
-
-            Stage stage = new Stage();
-            stage.setTitle("Paramètres — Connected Neighbours");
-            stage.initOwner(btnSettings.getScene().getWindow());
-            stage.initModality(Modality.WINDOW_MODAL);
-
-            Scene scene = new Scene(root, 720, 520);
-            try {
-                scene.getStylesheets().add(
-                        getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
-                );
-            } catch (Exception ignored) {
-                // Thème optionnel
-            }
-
-            stage.setScene(scene);
-            stage.setResizable(false);
-            stage.showAndWait();
-
-            loadData();
-        } catch (Exception e) {
-            showError("Impossible d'ouvrir les paramètres : " + e.getMessage());
-        }
-    }
-
-    @FXML
-    public void onLogoutClick() {
-        if (appContext == null) return;
-        Alert confirm = new Alert(
-                Alert.AlertType.CONFIRMATION,
-                "Se déconnecter ?",
-                ButtonType.YES, ButtonType.NO
-        );
-        confirm.setTitle("Déconnexion");
-        confirm.setHeaderText(null);
-        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
-
-        appContext.logout();
-        Stage stage = (Stage) btnLogout.getScene().getWindow();
-        Object mainApp = stage.getUserData();
-        if (mainApp instanceof MainApp app) {
-            app.backToLogin();
-        } else {
-            stage.close();
-        }
-    }
-
     @FXML
     public void onSyncNowClick() {
         if (syncService != null) {
@@ -621,7 +552,7 @@ public class IncidentController {
                 syncNowButton.setDisable(true);
                 if (!reloginRequested) {
                     reloginRequested = true;
-                    Stage stage = (Stage) btnLogout.getScene().getWindow();
+                    Stage stage = (Stage) syncNowButton.getScene().getWindow();
                     Object mainApp = stage.getUserData();
                     if (mainApp instanceof MainApp app) {
                         app.backToLogin();
