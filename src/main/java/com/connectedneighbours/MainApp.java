@@ -2,6 +2,7 @@ package com.connectedneighbours;
 
 import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.controller.DashboardController;
+import com.connectedneighbours.controller.IncidentController;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.DatabaseManager;
 import com.connectedneighbours.service.SyncService;
@@ -102,12 +103,10 @@ public class MainApp extends Application {
         });
     }
 
-    private void showDashboard() {
+    public void showDashboard() {
         Platform.runLater(() -> {
             try {
-                // Construit le SyncService maintenant que l'ApiClient a un token supplier.
-                syncService = new SyncService(appContext.getApiClient());
-                syncService.start();
+                ensureSyncService();
 
                 FXMLLoader loader = new FXMLLoader(
                         getClass().getResource("/com/connectedneighbours/fxml/dashboard.fxml")
@@ -134,6 +133,48 @@ public class MainApp extends Application {
                 throw new RuntimeException("Impossible de charger dashboard.fxml", e);
             }
         });
+    }
+
+    public void showIncidents() {
+        Platform.runLater(() -> {
+            try {
+                ensureSyncService();
+
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/connectedneighbours/fxml/incidents.fxml")
+                );
+                loader.setControllerFactory(cls -> {
+                    if (cls == IncidentController.class)
+                        return new IncidentController(appContext, syncService);
+                    try {
+                        return cls.getDeclaredConstructors()[0].newInstance();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                Parent root = loader.load();
+
+                Scene scene = new Scene(root, 1280, 800);
+                applyTheme(scene);
+
+                primaryStage.setTitle("Incidents — Connected Neighbours Admin");
+                primaryStage.setScene(scene);
+                primaryStage.setUserData(this);
+                primaryStage.show();
+            } catch (Exception e) {
+                throw new RuntimeException("Impossible de charger incidents.fxml", e);
+            }
+        });
+    }
+
+    /**
+     * Initialise le SyncService s'il n'est pas encore créé/démarré.
+     */
+    private void ensureSyncService() {
+        if (syncService == null) {
+            syncService = new SyncService(appContext.getApiClient());
+            syncService.start();
+        }
     }
 
     private void applyTheme(Scene scene) {

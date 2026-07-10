@@ -261,7 +261,11 @@ public class DashboardController {
     //  Actions 
     @FXML
     public void onIncidentsClick() {
-        System.out.println("[TODO] Ouvrir écran incidents");
+        Stage stage = (Stage) btnIncidents.getScene().getWindow();
+        Object mainApp = stage.getUserData();
+        if (mainApp instanceof MainApp app) {
+            app.showIncidents();
+        }
     }
 
     @FXML
