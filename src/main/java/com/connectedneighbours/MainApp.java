@@ -2,6 +2,7 @@ package com.connectedneighbours;
 
 import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.controller.DashboardController;
+import com.connectedneighbours.controller.HeaderController;
 import com.connectedneighbours.controller.IncidentController;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.DatabaseManager;
@@ -114,6 +115,8 @@ public class MainApp extends Application {
                 loader.setControllerFactory(cls -> {
                     if (cls == DashboardController.class)
                         return new DashboardController(appContext, syncService);
+                    if (cls == HeaderController.class)
+                        return new HeaderController(appContext);
                     try {
                         return cls.getDeclaredConstructors()[0].newInstance();
                     } catch (Exception e) {
@@ -146,6 +149,8 @@ public class MainApp extends Application {
                 loader.setControllerFactory(cls -> {
                     if (cls == IncidentController.class)
                         return new IncidentController(appContext, syncService);
+                    if (cls == HeaderController.class)
+                        return new HeaderController(appContext);
                     try {
                         return cls.getDeclaredConstructors()[0].newInstance();
                     } catch (Exception e) {
