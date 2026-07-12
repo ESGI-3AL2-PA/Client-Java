@@ -54,7 +54,6 @@ class SyncServiceTest {
 
         when(incidentRepo.findUnsynced()).thenReturn(List.of());
         when(apiClient.get("/incidents?source=remote")).thenReturn("[]");
-        when(userRepo.findAll()).thenReturn(List.of());
         when(apiClient.get("/users?source=remote")).thenReturn("[]");
 
         List<SyncStatus> statuses = new ArrayList<>();
@@ -74,7 +73,6 @@ class SyncServiceTest {
         assertEquals(List.of(SyncStatus.SYNCING, SyncStatus.SUCCESS), statuses);
         verify(incidentRepo).findUnsynced();
         verify(apiClient).get("/incidents?source=remote");
-        verify(userRepo).findAll();
         verify(apiClient).get("/users?source=remote");
     }
 
@@ -97,7 +95,6 @@ class SyncServiceTest {
         when(incidentRepo.findUnsynced()).thenReturn(List.of(local));
         when(apiClient.get("/incidents/inc-1")).thenReturn(mapper.writeValueAsString(remote));
         when(apiClient.get("/incidents?source=remote")).thenReturn("[]");
-        when(userRepo.findAll()).thenReturn(List.of());
         when(apiClient.get("/users?source=remote")).thenReturn("[]");
 
         SyncService service = new SyncService(
@@ -118,4 +115,3 @@ class SyncServiceTest {
         assertTrue(local.isSynced());
     }
 }
-
