@@ -7,7 +7,6 @@ import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.repository.AlertRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.service.SyncService;
-import com.connectedneighbours.service.SyncStatus;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -15,22 +14,14 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.stage.Stage;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class DashboardController {
+public class DashboardController extends BaseController {
 
-    private static final DateTimeFormatter DATE_FMT =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-    // include Header
-    @FXML
-    private HeaderController headerController;
     //  Cartes de stats
     @FXML
     private Label statOpenIncidents;
@@ -54,32 +45,19 @@ public class DashboardController {
     @FXML
     private TableColumn<Incident, String> colStatus;
     @FXML
-    private TableColumn<Incident, java.time.LocalDateTime> colDate;
+    private TableColumn<Incident, LocalDateTime> colDate;
     //  Alertes
     @FXML
     private VBox alertsContainer;
-    //  Barre de statut
-    @FXML
-    private Circle syncStatusDot;
-    @FXML
-    private Label syncStatusLabel;
-    @FXML
-    private Label lastSyncLabel;
-    @FXML
-    private Button syncNowButton;
-    //  Services
-    private AppContext appContext;
-    private SyncService syncService;
+    //  Repositories
     private IncidentRepository incidentRepo;
     private AlertRepository alertRepo;
-    private boolean reloginRequested = false;
 
     public DashboardController() {
     }
 
     public DashboardController(AppContext appContext, SyncService syncService) {
-        this.appContext = appContext;
-        this.syncService = syncService;
+        super(appContext, syncService);
         this.incidentRepo = new IncidentRepository();
         this.alertRepo = new AlertRepository();
     }
@@ -94,12 +72,13 @@ public class DashboardController {
         }
         setupTable();
         loadData();
-        if (syncService != null) {
-            syncService.setStatusListener(this::updateSyncUI);
-        }
-        if (headerController != null) {
-            headerController.setActivePage(Page.DASHBOARD);
-        }
+        setupSync();
+        setupHeader(Page.DASHBOARD);
+    }
+
+    @Override
+    protected void onSyncSuccess() {
+        loadData();
     }
 
     //  Config du TableView
@@ -111,7 +90,7 @@ public class DashboardController {
         colDate.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         colDate.setCellFactory(col -> new TableCell<>() {
             @Override
-            protected void updateItem(java.time.LocalDateTime item, boolean empty) {
+            protected void updateItem(LocalDateTime item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
@@ -224,7 +203,8 @@ public class DashboardController {
 
     //  Détail d'un incident (double-clic) 
     private void onIncidentDoubleClick(Incident incident) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        javafx.scene.control.Alert alert =
+                new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle("Détail incident");
         alert.setHeaderText(incident.getCategory());
         alert.setContentText(
@@ -260,55 +240,6 @@ public class DashboardController {
         System.out.println("[TODO] Créer un nouvel incident");
     }
 
-    @FXML
-    public void onSyncNowClick() {
-        if (syncService != null) {
-            syncNowButton.setDisable(true);
-            syncService.syncNow();
-        }
-    }
-
-    //  Mise à jour de la barre de sync
-    private void updateSyncUI(SyncStatus status) {
-        switch (status) {
-            case OFFLINE -> {
-                syncStatusLabel.setText("Hors-ligne");
-                syncStatusDot.setFill(Color.GRAY);
-                syncNowButton.setDisable(false);
-            }
-            case SYNCING -> {
-                syncStatusLabel.setText("Synchronisation en cours...");
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-            }
-            case SUCCESS -> {
-                syncStatusLabel.setText("Synchronisé");
-                syncStatusDot.setFill(Color.GREEN);
-                syncNowButton.setDisable(false);
-                lastSyncLabel.setText("Dernière sync : " + LocalDateTime.now().format(DATE_FMT));
-                loadData(); // rafraîchir les données après une sync réussie
-            }
-            case ERROR -> {
-                syncStatusLabel.setText("Erreur de synchronisation");
-                syncStatusDot.setFill(Color.RED);
-                syncNowButton.setDisable(false);
-            }
-            case AUTH_REQUIRED -> {
-                syncStatusLabel.setText("Reconnexion requise");
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-                if (!reloginRequested) {
-                    reloginRequested = true;
-                    Stage stage = (Stage) syncNowButton.getScene().getWindow();
-                    Object mainApp = stage.getUserData();
-                    if (mainApp instanceof MainApp app) {
-                        app.backToLogin();
-                    }
-                }
-            }
-        }
-    }
-
     //  Helpers couleurs alertes 
     private String alertColor(String type) {
         return switch (type != null ? type : "") {
@@ -324,12 +255,5 @@ public class DashboardController {
             case "WARNING" -> "#fefaf0";
             default -> "#f0f7fe";
         };
-    }
-
-    private void showError(String msg) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-        alert.setTitle("Erreur");
-        alert.setContentText(msg);
-        alert.showAndWait();
     }
 }
