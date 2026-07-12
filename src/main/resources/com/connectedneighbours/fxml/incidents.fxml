@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.Circle?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21"
+            fx:controller="com.connectedneighbours.controller.IncidentController"
+            style="-fx-background-color: #f0f2f5;">
+
+    <!-- HEADER -->
+    <top>
+        <fx:include source="header.fxml" fx:id="header"/>
+    </top>
+
+    <!-- CONTENU PRINCIPAL -->
+    <center>
+        <ScrollPane fitToWidth="true"
+                    style="-fx-background: transparent; -fx-background-color: transparent;">
+            <VBox spacing="20">
+                <padding>
+                    <Insets top="24" right="24" bottom="24" left="24"/>
+                </padding>
+
+                <!-- Titre de page -->
+                <Label text="Gestion des incidents"
+                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+
+                <!-- ── BARRE DE FILTRES + ACTIONS ── -->
+                <HBox spacing="12" alignment="CENTER_LEFT"
+                      style="-fx-background-color: #ffffff; -fx-background-radius: 8;
+                             -fx-border-color: #e8e8e8; -fx-border-radius: 8;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+                    <padding>
+                        <Insets top="14" right="16" bottom="14" left="16"/>
+                    </padding>
+
+                    <Label text="Statut :"
+                           style="-fx-font-size: 13px; -fx-text-fill: #555555;"/>
+                    <ComboBox fx:id="filterStatus" prefWidth="160"
+                              promptText="Tous les statuts"/>
+
+                    <Label text="Catégorie :"
+                           style="-fx-font-size: 13px; -fx-text-fill: #555555;"/>
+                    <ComboBox fx:id="filterCategory" prefWidth="180"
+                              promptText="Toutes les catégories"/>
+
+                    <Region HBox.hgrow="ALWAYS"/>
+
+                    <Label fx:id="countLabel" text="— incidents"
+                           style="-fx-font-size: 12px; -fx-text-fill: #aaaaaa;"/>
+
+                    <Button text="+ Nouvel incident"
+                            onAction="#onNewIncidentClick"
+                            style="-fx-background-color: #4a6fa5; -fx-text-fill: white;
+                                   -fx-background-radius: 4; -fx-cursor: hand;
+                                   -fx-padding: 8 16 8 16;"/>
+                </HBox>
+
+                <!-- ── TABLEAU DES INCIDENTS ── -->
+                <VBox spacing="0"
+                      style="-fx-background-color: #ffffff; -fx-background-radius: 8;
+                             -fx-border-color: #e8e8e8; -fx-border-radius: 8;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+                    <padding>
+                        <Insets top="0" right="0" bottom="0" left="0"/>
+                    </padding>
+
+                    <TableView fx:id="incidentsTable"
+                               VBox.vgrow="ALWAYS"
+                               prefHeight="520"
+                               style="-fx-background-color: transparent;">
+                        <columns>
+                            <TableColumn fx:id="colId" text="ID" prefWidth="80"/>
+                            <TableColumn fx:id="colCategory" text="Catégorie" prefWidth="130"/>
+                            <TableColumn fx:id="colDescription" text="Description" prefWidth="200"/>
+                            <TableColumn fx:id="colStatus" text="Statut" prefWidth="100"/>
+                            <TableColumn fx:id="colReporter" text="Reporter" prefWidth="140"/>
+                            <TableColumn fx:id="colDistrict" text="District" prefWidth="120"/>
+                            <TableColumn fx:id="colAssignedTo" text="Assigné à" prefWidth="140"/>
+                            <TableColumn fx:id="colCreatedAt" text="Créé le" prefWidth="140"/>
+                            <TableColumn fx:id="colUpdatedAt" text="Modifié le" prefWidth="140"/>
+                            <TableColumn fx:id="colSynced" text="Sync" prefWidth="50"/>
+                        </columns>
+                        <placeholder>
+                            <Label text="Aucun incident trouvé"
+                                   style="-fx-text-fill: #aaaaaa; -fx-font-size: 14px;"/>
+                        </placeholder>
+                    </TableView>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <!-- BARRE DE STATUT -->
+    <bottom>
+        <HBox spacing="8" alignment="CENTER_LEFT"
+              style="-fx-background-color: #f5f5f5;
+                     -fx-border-color: #e0e0e0;
+                     -fx-border-width: 1 0 0 0;">
+            <padding>
+                <Insets top="8" right="8" bottom="8" left="8"/>
+            </padding>
+            <Circle fx:id="syncStatusDot" radius="6" fill="GRAY"/>
+            <Label fx:id="syncStatusLabel" text="Hors-ligne"
+                   style="-fx-font-size: 12px;"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="lastSyncLabel"
+                   style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
+            <Button fx:id="syncNowButton" text="Synchroniser maintenant"
+                    onAction="#onSyncNowClick"
+                    style="-fx-font-size: 12px;"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

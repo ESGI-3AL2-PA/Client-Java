@@ -3,6 +3,7 @@ package com.connectedneighbours.service;
 import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.repository.ApiClient;
+import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,7 @@ class SyncServiceTest {
         ApiClient apiClient = mock(ApiClient.class);
         IncidentRepository incidentRepo = mock(IncidentRepository.class);
         UserRepository userRepo = mock(UserRepository.class);
+        DistrictRepository districtRepo = mock(DistrictRepository.class);
         ObjectMapper mapper = JacksonConfig.get();
 
         List<SyncStatus> statuses = new ArrayList<>();
@@ -33,6 +35,7 @@ class SyncServiceTest {
                 apiClient,
                 incidentRepo,
                 userRepo,
+                districtRepo,
                 mapper,
                 () -> false,
                 Runnable::run
@@ -50,12 +53,13 @@ class SyncServiceTest {
         ApiClient apiClient = mock(ApiClient.class);
         IncidentRepository incidentRepo = mock(IncidentRepository.class);
         UserRepository userRepo = mock(UserRepository.class);
+        DistrictRepository districtRepo = mock(DistrictRepository.class);
         ObjectMapper mapper = JacksonConfig.get();
 
         when(incidentRepo.findUnsynced()).thenReturn(List.of());
         when(apiClient.get("/incidents?source=remote")).thenReturn("[]");
-        when(userRepo.findAll()).thenReturn(List.of());
         when(apiClient.get("/users?source=remote")).thenReturn("[]");
+        when(apiClient.get("/districts")).thenReturn("[]");
 
         List<SyncStatus> statuses = new ArrayList<>();
 
@@ -63,6 +67,7 @@ class SyncServiceTest {
                 apiClient,
                 incidentRepo,
                 userRepo,
+                districtRepo,
                 mapper,
                 () -> true,
                 Runnable::run
@@ -74,7 +79,6 @@ class SyncServiceTest {
         assertEquals(List.of(SyncStatus.SYNCING, SyncStatus.SUCCESS), statuses);
         verify(incidentRepo).findUnsynced();
         verify(apiClient).get("/incidents?source=remote");
-        verify(userRepo).findAll();
         verify(apiClient).get("/users?source=remote");
     }
 
@@ -83,6 +87,7 @@ class SyncServiceTest {
         ApiClient apiClient = mock(ApiClient.class);
         IncidentRepository incidentRepo = mock(IncidentRepository.class);
         UserRepository userRepo = mock(UserRepository.class);
+        DistrictRepository districtRepo = mock(DistrictRepository.class);
         ObjectMapper mapper = JacksonConfig.get();
 
         Incident local = new Incident();
@@ -97,13 +102,14 @@ class SyncServiceTest {
         when(incidentRepo.findUnsynced()).thenReturn(List.of(local));
         when(apiClient.get("/incidents/inc-1")).thenReturn(mapper.writeValueAsString(remote));
         when(apiClient.get("/incidents?source=remote")).thenReturn("[]");
-        when(userRepo.findAll()).thenReturn(List.of());
         when(apiClient.get("/users?source=remote")).thenReturn("[]");
+        when(apiClient.get("/districts")).thenReturn("[]");
 
         SyncService service = new SyncService(
                 apiClient,
                 incidentRepo,
                 userRepo,
+                districtRepo,
                 mapper,
                 () -> true,
                 Runnable::run
@@ -118,4 +124,3 @@ class SyncServiceTest {
         assertTrue(local.isSynced());
     }
 }
-

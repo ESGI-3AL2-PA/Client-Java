@@ -1,9 +1,13 @@
 package com.connectedneighbours;
 
+import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.controller.DashboardController;
+import com.connectedneighbours.controller.HeaderController;
+import com.connectedneighbours.controller.IncidentController;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.DatabaseManager;
 import com.connectedneighbours.service.SyncService;
+import com.connectedneighbours.util.DatabaseUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -11,6 +15,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+
+import java.sql.SQLException;
 
 public class MainApp extends Application {
 
@@ -27,8 +33,17 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         this.appContext = new AppContext();
 
-        // Affiche immédiatement une fenêtre d'accueil (le navigateur va
-        // s'ouvrir pour le login). L'utilisateur garde un repère visuel.
+        // Mode offline-first : si un dernier utilisateur est mémorisé
+        // ET que la base H2 locale contient des données --> skip le login SSO et on ouvre directement le dashboard.
+        // L'utilisateur pourra relancer un login navigateur via le bouton "Déconnexion".
+        User restored = SessionConfig.loadLastUser().orElse(null);
+        if (restored != null && hasLocalData()) {
+            appContext.setCurrentUser(restored);
+            showDashboard();
+            return;
+        }
+
+        // Affiche immédiatement une fenêtre d'accueil (le navigateur va s'ouvrir pour le login).
         showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
 
         // Lance le login navigateur sur un thread d'arrière-plan.
@@ -39,7 +54,9 @@ public class MainApp extends Application {
             }
         };
         login.setOnSucceeded(e -> {
-            appContext.setCurrentUser(login.getValue());
+            User user = login.getValue();
+            appContext.setCurrentUser(user);
+            SessionConfig.saveLastUser(user);
             showDashboard();
         });
         login.setOnFailed(e -> {
@@ -53,9 +70,23 @@ public class MainApp extends Application {
         t.start();
     }
 
+    private boolean hasLocalData() {
+        String[] tables = {"INCIDENTS", "ALERTS", "USERS", "STATISTICS", "SYNC_LOG"};
+        for (String table : tables) {
+            try {
+                if (DatabaseUtil.countRows(table, null) > 0) {
+                    return true;
+                }
+            } catch (SQLException ignored) {
+                // Table inexistante ou erreur lecture → on ignore et on
+                // continue ; le fallback est le login navigateur.
+            }
+        }
+        return false;
+    }
+
     /**
-     * Affiche une fenêtre simple avec un message (en attendant le login
-     * navigateur, ou en cas d'échec).
+     * Affiche une fenêtre simple avec un message
      */
     private void showWaiting(String title, String message) {
         Platform.runLater(() -> {
@@ -67,18 +98,16 @@ public class MainApp extends Application {
             root.setStyle("-fx-background-color: #f0f2f5;");
             Scene scene = new Scene(root, 480, 200);
             applyTheme(scene);
-            primaryStage.setTitle(title + " — Connected Neighbours");
+            primaryStage.setTitle(title + " — Connected Neighbours Admin");
             primaryStage.setScene(scene);
             primaryStage.show();
         });
     }
 
-    private void showDashboard() {
+    public void showDashboard() {
         Platform.runLater(() -> {
             try {
-                // Construit le SyncService maintenant que l'ApiClient a un token supplier.
-                syncService = new SyncService(appContext.getApiClient());
-                syncService.start();
+                ensureSyncService();
 
                 FXMLLoader loader = new FXMLLoader(
                         getClass().getResource("/com/connectedneighbours/fxml/dashboard.fxml")
@@ -86,6 +115,8 @@ public class MainApp extends Application {
                 loader.setControllerFactory(cls -> {
                     if (cls == DashboardController.class)
                         return new DashboardController(appContext, syncService);
+                    if (cls == HeaderController.class)
+                        return new HeaderController(appContext);
                     try {
                         return cls.getDeclaredConstructors()[0].newInstance();
                     } catch (Exception e) {
@@ -105,6 +136,50 @@ public class MainApp extends Application {
                 throw new RuntimeException("Impossible de charger dashboard.fxml", e);
             }
         });
+    }
+
+    public void showIncidents() {
+        Platform.runLater(() -> {
+            try {
+                ensureSyncService();
+
+                FXMLLoader loader = new FXMLLoader(
+                        getClass().getResource("/com/connectedneighbours/fxml/incidents.fxml")
+                );
+                loader.setControllerFactory(cls -> {
+                    if (cls == IncidentController.class)
+                        return new IncidentController(appContext, syncService);
+                    if (cls == HeaderController.class)
+                        return new HeaderController(appContext);
+                    try {
+                        return cls.getDeclaredConstructors()[0].newInstance();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+                Parent root = loader.load();
+
+                Scene scene = new Scene(root, 1280, 800);
+                applyTheme(scene);
+
+                primaryStage.setTitle("Incidents — Connected Neighbours Admin");
+                primaryStage.setScene(scene);
+                primaryStage.setUserData(this);
+                primaryStage.show();
+            } catch (Exception e) {
+                throw new RuntimeException("Impossible de charger incidents.fxml", e);
+            }
+        });
+    }
+
+    /**
+     * Initialise le SyncService s'il n'est pas encore créé/démarré.
+     */
+    private void ensureSyncService() {
+        if (syncService == null) {
+            syncService = new SyncService(appContext.getApiClient());
+            syncService.start();
+        }
     }
 
     private void applyTheme(Scene scene) {
@@ -138,7 +213,9 @@ public class MainApp extends Application {
             }
         };
         login.setOnSucceeded(e -> {
-            appContext.setCurrentUser(login.getValue());
+            User user = login.getValue();
+            appContext.setCurrentUser(user);
+            SessionConfig.saveLastUser(user);
             showDashboard();
         });
         login.setOnFailed(e -> {
