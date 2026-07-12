@@ -69,6 +69,14 @@ public class DatabaseManager {
                     synced_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
                 )
             """;
+    private static final String SQL_DISTRICTS = """
+                CREATE TABLE IF NOT EXISTS districts (
+                    id   VARCHAR(36)  PRIMARY KEY,
+                    name VARCHAR(200) NOT NULL
+                )
+            """;
+    private static final String SQL_USERS_ADD_DISTRICT_ID =
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS districtId VARCHAR(36)";
     private static Connection connection;
 
     public DatabaseManager() {
@@ -100,6 +108,8 @@ public class DatabaseManager {
             stmt.executeUpdate(SQL_STATISTICS);
             stmt.executeUpdate(SQL_SYNC_LOG);
             stmt.executeUpdate(SQL_ALERTS);
+            stmt.executeUpdate(SQL_DISTRICTS);
+            stmt.executeUpdate(SQL_USERS_ADD_DISTRICT_ID);
         }
     }
 }

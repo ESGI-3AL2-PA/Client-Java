@@ -1,7 +1,11 @@
 package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
+import com.connectedneighbours.model.District;
 import com.connectedneighbours.model.Incident;
+import com.connectedneighbours.model.User;
+import com.connectedneighbours.repository.DistrictRepository;
+import com.connectedneighbours.repository.UserRepository;
 import com.connectedneighbours.service.IncidentService;
 import com.connectedneighbours.service.SyncService;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -13,16 +17,21 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Modality;
+import javafx.util.StringConverter;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class IncidentController extends BaseController {
 
-    /** Formateur pour les dates des incidents (cellules, dialogues). */
+    /**
+     * Formateur pour les dates des incidents (cellules, dialogues).
+     */
     private static final DateTimeFormatter INCIDENT_DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -58,13 +67,21 @@ public class IncidentController extends BaseController {
     @FXML
     private TableColumn<Incident, String> colSynced;
 
-    // Services 
+    // Services
     private IncidentService incidentService;
+    private UserRepository userRepo;
+    private DistrictRepository districtRepo;
 
     /**
      * Master list (non-filtrée)
      */
     private List<Incident> allIncidents;
+
+    /**
+     * Caches pour résolution id → nom (rechargés à chaque loadData).
+     */
+    private Map<String, User> usersMap = new HashMap<>();
+    private Map<String, District> districtsMap = new HashMap<>();
 
     public IncidentController() {
     }
@@ -72,6 +89,8 @@ public class IncidentController extends BaseController {
     public IncidentController(AppContext appContext, SyncService syncService) {
         super(appContext, syncService);
         this.incidentService = new IncidentService();
+        this.userRepo = new UserRepository();
+        this.districtRepo = new DistrictRepository();
     }
 
     // Initialisation
@@ -79,6 +98,12 @@ public class IncidentController extends BaseController {
     public void initialize() {
         if (incidentService == null) {
             incidentService = new IncidentService();
+        }
+        if (userRepo == null) {
+            userRepo = new UserRepository();
+        }
+        if (districtRepo == null) {
+            districtRepo = new DistrictRepository();
         }
         setupTable();
         setupFilters();
@@ -117,25 +142,23 @@ public class IncidentController extends BaseController {
         // Statut (texte)
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
 
-        // Reporter (tronqué)
+        // Reporter (Prénom Nom)
         colReporter.setCellValueFactory(cell -> {
             String rid = cell.getValue().getReporterId();
-            return new ReadOnlyStringWrapper(
-                    rid != null && rid.length() > 8 ? rid.substring(0, 8) + "…" : rid);
+            return new ReadOnlyStringWrapper(resolveUserName(rid));
         });
 
-        // District (tronqué)
+        // District (Nom)
         colDistrict.setCellValueFactory(cell -> {
             String did = cell.getValue().getDistrictId();
-            return new ReadOnlyStringWrapper(
-                    did != null && did.length() > 8 ? did.substring(0, 8) + "…" : did);
+            return new ReadOnlyStringWrapper(resolveDistrictName(did));
         });
 
-        // Assigned To
+        // Assigned To (Prénom Nom)
         colAssignedTo.setCellValueFactory(cell -> {
             String a = cell.getValue().getAssignedTo();
-            return new ReadOnlyStringWrapper(
-                    a != null && a.length() > 8 ? a.substring(0, 8) + "…" : a);
+            if (a == null || a.isBlank()) return new ReadOnlyStringWrapper("");
+            return new ReadOnlyStringWrapper(resolveUserName(a));
         });
 
         // Dates
@@ -288,6 +311,16 @@ public class IncidentController extends BaseController {
     // Chargement des données 
 
     private void loadData() {
+        // Recharger les caches de résolution
+        usersMap = new HashMap<>();
+        for (User u : userRepo.findAll()) {
+            usersMap.put(u.getId(), u);
+        }
+        districtsMap = new HashMap<>();
+        for (District d : districtRepo.findAll()) {
+            districtsMap.put(d.getId(), d);
+        }
+
         allIncidents = incidentService.getAllIncidents();
         refreshCategoryFilter();
         applyFilters();
@@ -403,13 +436,69 @@ public class IncidentController extends BaseController {
         descriptionField.setWrapText(true);
 
         // Assigned To
-        TextField assignedToField = new TextField(
-                fresh.getAssignedTo() != null ? fresh.getAssignedTo() : "");
-        assignedToField.setPromptText("ID de l'utilisateur assigné");
+        List<User> districtAdmins = userRepo.findAdminsByDistrictId(
+                fresh.getDistrictId() != null ? fresh.getDistrictId() : "");
+
+        // Sentinelle pour "— Non assigné —"
+        User emptyUser = new User();
+        emptyUser.setId(null);
+        emptyUser.setFirstName("— Non assigné");
+        emptyUser.setLastName("—");
+
+        ObservableList<User> assignOptions = FXCollections.observableArrayList();
+        assignOptions.add(emptyUser);
+        assignOptions.addAll(districtAdmins);
+
+        ComboBox<User> assignedToBox = new ComboBox<>(assignOptions);
+        assignedToBox.setPrefWidth(300);
+
+        // Convertisseur d'affichage Prénom Nom
+        StringConverter<User> userConverter = new StringConverter<>() {
+            @Override
+            public String toString(User user) {
+                if (user == null) return "";
+                if (user.getId() == null) return "— Non assigné —";
+                String fn = user.getFirstName() != null ? user.getFirstName() : "";
+                String ln = user.getLastName() != null ? user.getLastName() : "";
+                return (fn + " " + ln).trim();
+            }
+
+            @Override
+            public User fromString(String string) {
+                return null;
+            }
+        };
+        assignedToBox.setConverter(userConverter);
+        assignedToBox.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(User item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : userConverter.toString(item));
+            }
+        });
+        assignedToBox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(User item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : userConverter.toString(item));
+            }
+        });
+
+        // Pré-sélection
+        if (fresh.getAssignedTo() != null && !fresh.getAssignedTo().isBlank()) {
+            assignOptions.stream()
+                    .filter(u -> fresh.getAssignedTo().equals(u.getId()))
+                    .findFirst()
+                    .ifPresentOrElse(assignedToBox::setValue, () -> assignedToBox.setValue(emptyUser));
+        } else {
+            assignedToBox.setValue(emptyUser);
+        }
 
         // Infos lecture seule
-        Label reporterLabel = new Label(fresh.getReporterId() != null ? fresh.getReporterId() : "—");
-        Label districtLabel = new Label(fresh.getDistrictId() != null ? fresh.getDistrictId() : "—");
+        String reporterDisplay = resolveUserName(fresh.getReporterId());
+        String districtDisplay = resolveDistrictName(fresh.getDistrictId());
+        Label reporterLabel = new Label(reporterDisplay);
+        Label districtLabel = new Label(districtDisplay);
         Label createdLabel = new Label(
                 fresh.getCreatedAt() != null ? fresh.getCreatedAt().format(INCIDENT_DATE_FMT) : "—");
         Label updatedLabel = new Label(
@@ -427,7 +516,7 @@ public class IncidentController extends BaseController {
         grid.add(new Label("Description"), 0, row);
         grid.add(descriptionField, 1, row++);
         grid.add(new Label("Assigné à"), 0, row);
-        grid.add(assignedToField, 1, row++);
+        grid.add(assignedToBox, 1, row++);
 
         grid.add(new Separator(), 0, row++);
         grid.add(new Separator(), 1, row - 1);
@@ -450,8 +539,9 @@ public class IncidentController extends BaseController {
                 fresh.setStatus(statusBox.getValue());
                 fresh.setCategory(categoryField.getText().trim());
                 fresh.setDescription(descriptionField.getText().trim());
-                String assignee = assignedToField.getText().trim();
-                fresh.setAssignedTo(assignee.isEmpty() ? null : assignee);
+                User selectedUser = assignedToBox.getValue();
+                fresh.setAssignedTo(selectedUser != null && selectedUser.getId() != null
+                        ? selectedUser.getId() : null);
                 try {
                     incidentService.updateIncident(fresh);
                     return true;
@@ -489,5 +579,24 @@ public class IncidentController extends BaseController {
                 }
             }
         };
+    }
+
+    // Résolution id → nom
+
+    private String resolveUserName(String userId) {
+        if (userId == null || userId.isBlank()) return "—";
+        User u = usersMap.get(userId);
+        if (u == null) return "Inconnu";
+        String fn = u.getFirstName() != null ? u.getFirstName() : "";
+        String ln = u.getLastName() != null ? u.getLastName() : "";
+        String name = (fn + " " + ln).trim();
+        return name.isEmpty() ? "Inconnu" : name;
+    }
+
+    private String resolveDistrictName(String districtId) {
+        if (districtId == null || districtId.isBlank()) return "—";
+        District d = districtsMap.get(districtId);
+        if (d == null) return "Inconnu";
+        return d.getName() != null ? d.getName() : "Inconnu";
     }
 }

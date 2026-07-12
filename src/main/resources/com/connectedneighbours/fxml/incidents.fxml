@@ -76,9 +76,9 @@
                             <TableColumn fx:id="colCategory" text="Catégorie" prefWidth="130"/>
                             <TableColumn fx:id="colDescription" text="Description" prefWidth="200"/>
                             <TableColumn fx:id="colStatus" text="Statut" prefWidth="100"/>
-                            <TableColumn fx:id="colReporter" text="Reporter" prefWidth="80"/>
-                            <TableColumn fx:id="colDistrict" text="District" prefWidth="80"/>
-                            <TableColumn fx:id="colAssignedTo" text="Assigné à" prefWidth="80"/>
+                            <TableColumn fx:id="colReporter" text="Reporter" prefWidth="140"/>
+                            <TableColumn fx:id="colDistrict" text="District" prefWidth="120"/>
+                            <TableColumn fx:id="colAssignedTo" text="Assigné à" prefWidth="140"/>
                             <TableColumn fx:id="colCreatedAt" text="Créé le" prefWidth="140"/>
                             <TableColumn fx:id="colUpdatedAt" text="Modifié le" prefWidth="140"/>
                             <TableColumn fx:id="colSynced" text="Sync" prefWidth="50"/>
