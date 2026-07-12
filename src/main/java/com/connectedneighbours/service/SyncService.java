@@ -2,9 +2,11 @@ package com.connectedneighbours.service;
 
 import com.connectedneighbours.config.ApiConfig;
 import com.connectedneighbours.config.JacksonConfig;
+import com.connectedneighbours.model.District;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
+import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -25,6 +27,7 @@ public class SyncService {
 
     private final IncidentRepository incidentRepo;
     private final UserRepository userRepo;
+    private final DistrictRepository districtRepo;
     private final ApiClient apiClient;
     private final ObjectMapper mapper;
     private final ConnectivityChecker connectivityChecker;
@@ -41,6 +44,7 @@ public class SyncService {
                 apiClient,
                 new IncidentRepository(),
                 new UserRepository(),
+                new DistrictRepository(),
                 JacksonConfig.get(),
                 SyncService::defaultConnectivityCheck,
                 javafx.application.Platform::runLater
@@ -51,6 +55,7 @@ public class SyncService {
             ApiClient apiClient,
             IncidentRepository incidentRepo,
             UserRepository userRepo,
+            DistrictRepository districtRepo,
             ObjectMapper mapper,
             ConnectivityChecker connectivityChecker,
             UiExecutor uiExecutor
@@ -58,6 +63,7 @@ public class SyncService {
         this.apiClient = apiClient;
         this.incidentRepo = incidentRepo;
         this.userRepo = userRepo;
+        this.districtRepo = districtRepo;
         this.mapper = mapper;
         this.connectivityChecker = connectivityChecker;
         this.uiExecutor = uiExecutor;
@@ -119,6 +125,7 @@ public class SyncService {
             pushLocalIncidents();
             pullRemoteIncidents();
             pullRemoteUsers();
+            pullRemoteDistricts();
             notifyStatus(SyncStatus.SUCCESS);
         } catch (com.connectedneighbours.auth.exception.TokenUnavailableException e) {
             // plus d'access token --> relance le login navigateur.
@@ -198,6 +205,24 @@ public class SyncService {
                 // Existe déjà : résoudre le conflit
                 User resolved = resolveConflictUser(existing.get(), remote);
                 userRepo.update(resolved);
+            }
+        }
+    }
+
+    public void pullRemoteDistricts() throws IOException {
+        String json = apiClient.get("/districts");
+        JsonNode root = mapper.readTree(json);
+        JsonNode dataNode = root.has("data") ? root.get("data") : root;
+        District[] remoteArray = mapper.treeToValue(dataNode, District[].class);
+        List<District> remoteList = java.util.Arrays.asList(remoteArray);
+
+        for (District remote : remoteList) {
+            Optional<District> existing = districtRepo.findById(remote.getId());
+
+            if (existing.isEmpty()) {
+                districtRepo.save(remote);
+            } else {
+                districtRepo.update(remote);
             }
         }
     }
