@@ -1,11 +1,9 @@
 package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
-import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.service.IncidentService;
 import com.connectedneighbours.service.SyncService;
-import com.connectedneighbours.service.SyncStatus;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -14,10 +12,7 @@ import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.GridPane;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
 import javafx.stage.Modality;
-import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -25,14 +20,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class IncidentController {
+public class IncidentController extends BaseController {
 
-    private static final DateTimeFormatter DATE_FMT =
+    /** Formateur pour les dates des incidents (cellules, dialogues). */
+    private static final DateTimeFormatter INCIDENT_DATE_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-
-    // include Header
-    @FXML
-    private HeaderController headerController;
 
     // Filtres
     @FXML
@@ -66,21 +58,8 @@ public class IncidentController {
     @FXML
     private TableColumn<Incident, String> colSynced;
 
-    // Barre de sync 
-    @FXML
-    private Circle syncStatusDot;
-    @FXML
-    private Label syncStatusLabel;
-    @FXML
-    private Label lastSyncLabel;
-    @FXML
-    private Button syncNowButton;
-
     // Services 
-    private AppContext appContext;
-    private SyncService syncService;
     private IncidentService incidentService;
-    private boolean reloginRequested = false;
 
     /**
      * Master list (non-filtrée)
@@ -91,8 +70,7 @@ public class IncidentController {
     }
 
     public IncidentController(AppContext appContext, SyncService syncService) {
-        this.appContext = appContext;
-        this.syncService = syncService;
+        super(appContext, syncService);
         this.incidentService = new IncidentService();
     }
 
@@ -105,12 +83,13 @@ public class IncidentController {
         setupTable();
         setupFilters();
         loadData();
-        if (syncService != null) {
-            syncService.setStatusListener(this::updateSyncUI);
-        }
-        if (headerController != null) {
-            headerController.setActivePage(Page.INCIDENTS);
-        }
+        setupSync();
+        setupHeader(Page.INCIDENTS);
+    }
+
+    @Override
+    protected void onSyncSuccess() {
+        loadData();
     }
 
     // Configuration de la table
@@ -228,7 +207,7 @@ public class IncidentController {
                 if (empty || item == null) {
                     setText(null);
                 } else {
-                    setText(item.format(DATE_FMT));
+                    setText(item.format(INCIDENT_DATE_FMT));
                 }
             }
         };
@@ -432,9 +411,9 @@ public class IncidentController {
         Label reporterLabel = new Label(fresh.getReporterId() != null ? fresh.getReporterId() : "—");
         Label districtLabel = new Label(fresh.getDistrictId() != null ? fresh.getDistrictId() : "—");
         Label createdLabel = new Label(
-                fresh.getCreatedAt() != null ? fresh.getCreatedAt().format(DATE_FMT) : "—");
+                fresh.getCreatedAt() != null ? fresh.getCreatedAt().format(INCIDENT_DATE_FMT) : "—");
         Label updatedLabel = new Label(
-                fresh.getUpdatedAt() != null ? fresh.getUpdatedAt().format(DATE_FMT) : "—");
+                fresh.getUpdatedAt() != null ? fresh.getUpdatedAt().format(INCIDENT_DATE_FMT) : "—");
         Label syncedLabel = new Label(fresh.isSynced() ? "✓ Synchronisé" : "✗ Non synchronisé");
         syncedLabel.setStyle(fresh.isSynced()
                 ? "-fx-text-fill: #27ae60; -fx-font-weight: bold;"
@@ -510,64 +489,5 @@ public class IncidentController {
                 }
             }
         };
-    }
-
-    @FXML
-    public void onSyncNowClick() {
-        if (syncService != null) {
-            syncNowButton.setDisable(true);
-            syncService.syncNow();
-        }
-    }
-
-    //  Sync UI (même pattern que DashboardController)
-
-    private void updateSyncUI(SyncStatus status) {
-        switch (status) {
-            case OFFLINE -> {
-                syncStatusLabel.setText("Hors-ligne");
-                syncStatusDot.setFill(Color.GRAY);
-                syncNowButton.setDisable(false);
-            }
-            case SYNCING -> {
-                syncStatusLabel.setText("Synchronisation en cours...");
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-            }
-            case SUCCESS -> {
-                syncStatusLabel.setText("Synchronisé");
-                syncStatusDot.setFill(Color.GREEN);
-                syncNowButton.setDisable(false);
-                lastSyncLabel.setText("Dernière sync : " + LocalDateTime.now().format(DATE_FMT));
-                loadData();
-            }
-            case ERROR -> {
-                syncStatusLabel.setText("Erreur de synchronisation");
-                syncStatusDot.setFill(Color.RED);
-                syncNowButton.setDisable(false);
-            }
-            case AUTH_REQUIRED -> {
-                syncStatusLabel.setText("Reconnexion requise");
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-                if (!reloginRequested) {
-                    reloginRequested = true;
-                    Stage stage = (Stage) syncNowButton.getScene().getWindow();
-                    Object mainApp = stage.getUserData();
-                    if (mainApp instanceof MainApp app) {
-                        app.backToLogin();
-                    }
-                }
-            }
-        }
-    }
-
-    //  Helpers
-
-    private void showError(String msg) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Erreur");
-        alert.setContentText(msg);
-        alert.showAndWait();
     }
 }
