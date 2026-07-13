@@ -1,9 +1,13 @@
 package com.connectedneighbours.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Incident {
 
     /**
@@ -134,6 +138,7 @@ public class Incident {
         this.history = history;
     }
 
+    @JsonIgnore
     public boolean isSynced() {
         return synced;
     }

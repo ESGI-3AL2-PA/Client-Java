@@ -123,4 +123,39 @@ class SyncServiceTest {
         verify(incidentRepo).update(any(Incident.class));
         assertTrue(local.isSynced());
     }
+
+    @Test
+    void syncCycle_localIncidentNotFoundOnServer_createsViaPost() throws Exception {
+        ApiClient apiClient = mock(ApiClient.class);
+        IncidentRepository incidentRepo = mock(IncidentRepository.class);
+        UserRepository userRepo = mock(UserRepository.class);
+        DistrictRepository districtRepo = mock(DistrictRepository.class);
+        ObjectMapper mapper = JacksonConfig.get();
+
+        Incident local = new Incident();
+        local.setId("inc-new");
+        local.setUpdatedAt(LocalDateTime.now());
+        local.setSynced(false);
+
+        // Le GET renvoie un 404 (ApiException) → l'incident n'existe pas sur le serveur
+        when(incidentRepo.findUnsynced()).thenReturn(List.of(local));
+        when(apiClient.get("/incidents/inc-new")).thenThrow(
+                new com.connectedneighbours.repository.ApiException(404, "Not Found"));
+        when(apiClient.get("/incidents?source=remote")).thenReturn("[]");
+        when(apiClient.get("/users?source=remote")).thenReturn("[]");
+        when(apiClient.get("/districts")).thenReturn("[]");
+
+        SyncService service = new SyncService(
+                apiClient, incidentRepo, userRepo, districtRepo,
+                mapper, () -> true, Runnable::run
+        );
+
+        service.syncCycle();
+
+        // Vérifie qu'un POST a été fait pour créer l'incident
+        verify(apiClient).post(eq("/incidents"), any(Incident.class));
+        verify(apiClient, never()).put(anyString(), any());
+        assertTrue(local.isSynced());
+        verify(incidentRepo).update(any(Incident.class));
+    }
 }
