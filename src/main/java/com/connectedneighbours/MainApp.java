@@ -7,6 +7,7 @@ import com.connectedneighbours.controller.IncidentController;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.DatabaseManager;
 import com.connectedneighbours.service.SyncService;
+import com.connectedneighbours.theme.ThemeManager;
 import com.connectedneighbours.util.DatabaseUtil;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -32,6 +33,8 @@ public class MainApp extends Application {
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         this.appContext = new AppContext();
+
+        ThemeManager.reloadCustomThemes();
 
         // Mode offline-first : si un dernier utilisateur est mémorisé
         // ET que la base H2 locale contient des données --> skip le login SSO et on ouvre directement le dashboard.
@@ -92,12 +95,12 @@ public class MainApp extends Application {
         Platform.runLater(() -> {
             javafx.scene.control.Label label = new javafx.scene.control.Label(message);
             label.setWrapText(true);
-            label.setStyle("-fx-font-size: 14px; -fx-text-fill: #555;");
+            label.getStyleClass().add("waiting-label");
             javafx.scene.layout.StackPane root = new javafx.scene.layout.StackPane(label);
             root.setPadding(new javafx.geometry.Insets(24));
-            root.setStyle("-fx-background-color: #f0f2f5;");
+            root.getStyleClass().add("app-bg");
             Scene scene = new Scene(root, 480, 200);
-            applyTheme(scene);
+            ThemeManager.applyTheme(scene);
             primaryStage.setTitle(title + " — Connected Neighbours Admin");
             primaryStage.setScene(scene);
             primaryStage.show();
@@ -126,7 +129,7 @@ public class MainApp extends Application {
                 Parent root = loader.load();
 
                 Scene scene = new Scene(root, 1280, 800);
-                applyTheme(scene);
+                ThemeManager.applyTheme(scene);
 
                 primaryStage.setTitle("Connected Neighbours — Admin");
                 primaryStage.setScene(scene);
@@ -160,7 +163,7 @@ public class MainApp extends Application {
                 Parent root = loader.load();
 
                 Scene scene = new Scene(root, 1280, 800);
-                applyTheme(scene);
+                ThemeManager.applyTheme(scene);
 
                 primaryStage.setTitle("Incidents — Connected Neighbours Admin");
                 primaryStage.setScene(scene);
@@ -179,15 +182,6 @@ public class MainApp extends Application {
         if (syncService == null) {
             syncService = new SyncService(appContext.getApiClient());
             syncService.start();
-        }
-    }
-
-    private void applyTheme(Scene scene) {
-        try {
-            scene.getStylesheets().add(
-                    getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
-            );
-        } catch (Exception ignored) {
         }
     }
 

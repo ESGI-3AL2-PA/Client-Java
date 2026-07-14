@@ -40,4 +40,5 @@ build/
 .DS_Store
 
 ./.idea/copilot.data.migration.ask2agent.xml
-/data
+**/data/
+**/themes/
