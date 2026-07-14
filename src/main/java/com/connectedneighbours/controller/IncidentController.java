@@ -8,6 +8,7 @@ import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.repository.UserRepository;
 import com.connectedneighbours.service.IncidentService;
 import com.connectedneighbours.service.SyncService;
+import com.connectedneighbours.theme.ThemeManager;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -391,6 +392,9 @@ public class IncidentController extends BaseController {
             return null;
         });
 
+        // Applique le thème courant à la scène du dialog (popup séparée).
+        dialog.setOnShown(e -> ThemeManager.applyTheme(dialog.getDialogPane().getScene()));
+
         Optional<Incident> result = dialog.showAndWait();
         if (result.isPresent() && result.get() != null) {
             loadData();
@@ -552,6 +556,9 @@ public class IncidentController extends BaseController {
             }
             return false;
         });
+
+        // Applique le thème courant à la scène du dialog (popup séparée).
+        dialog.setOnShown(e -> ThemeManager.applyTheme(dialog.getDialogPane().getScene()));
 
         Optional<Boolean> result = dialog.showAndWait();
         if (result.isPresent() && result.get()) {

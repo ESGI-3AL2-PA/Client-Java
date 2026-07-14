@@ -3,6 +3,7 @@ package com.connectedneighbours.controller;
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.User;
+import com.connectedneighbours.theme.ThemeManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -26,17 +27,8 @@ import java.util.Map;
  */
 public class HeaderController {
 
-    private static final String STYLE_ACTIVE =
-            "-fx-background-color: #4a6fa5; -fx-text-fill: white;" +
-                    " -fx-background-radius: 4; -fx-cursor: hand;";
-
-    private static final String STYLE_INACTIVE =
-            "-fx-background-color: transparent; -fx-border-color: #e0e0e0;" +
-                    " -fx-border-radius: 4; -fx-cursor: hand;";
-
-    private static final String STYLE_LOGOUT =
-            "-fx-background-color: #e74c3c; -fx-text-fill: white;" +
-                    " -fx-background-radius: 4; -fx-cursor: hand;";
+    private static final String STYLE_ACTIVE = "nav-button-active";
+    private static final String STYLE_INACTIVE = "nav-button";
 
     @FXML
     private Button btnDashboard;
@@ -96,7 +88,8 @@ public class HeaderController {
             Button b = e.getValue();
             if (b == null) continue;
             boolean active = (e.getKey() == page);
-            b.setStyle(active ? STYLE_ACTIVE : STYLE_INACTIVE);
+            b.getStyleClass().removeAll(STYLE_ACTIVE, STYLE_INACTIVE);
+            b.getStyleClass().add(active ? STYLE_ACTIVE : STYLE_INACTIVE);
             b.setDisable(active);
         }
     }
@@ -137,13 +130,7 @@ public class HeaderController {
             stage.initModality(Modality.WINDOW_MODAL);
 
             Scene scene = new Scene(root, 720, 520);
-            try {
-                scene.getStylesheets().add(
-                        getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
-                );
-            } catch (Exception ignored) {
-                // Thème optionnel
-            }
+            ThemeManager.applyTheme(scene);
 
             stage.setScene(scene);
             stage.setResizable(false);

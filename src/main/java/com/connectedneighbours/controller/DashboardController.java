@@ -176,7 +176,8 @@ public class DashboardController extends BaseController {
 
         if (alerts.isEmpty()) {
             Label empty = new Label("Aucune alerte récente");
-            empty.setStyle("-fx-text-fill: #aaaaaa; -fx-font-size: 12px;");
+            empty.getStyleClass().add("text-faint");
+            empty.setStyle("-fx-font-size: 12px;");
             alertsContainer.getChildren().add(empty);
             return;
         }

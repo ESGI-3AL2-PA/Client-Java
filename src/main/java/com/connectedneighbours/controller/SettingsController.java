@@ -1,6 +1,8 @@
 package com.connectedneighbours.controller;
 
 import com.connectedneighbours.config.ApiConfig;
+import com.connectedneighbours.theme.Theme;
+import com.connectedneighbours.theme.ThemeManager;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
@@ -8,7 +10,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.paint.Color;
@@ -18,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.Socket;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
@@ -33,6 +38,10 @@ public class SettingsController {
 	private Label baseUrlLabel;
 	@FXML
 	private Label testResultLabel;
+	@FXML
+	private ComboBox<Theme> themeCombo;
+	@FXML
+	private Label themeHintLabel;
 
 	private volatile Task<Boolean> connectionTestTask;
 
@@ -67,6 +76,59 @@ public class SettingsController {
 		});
 
 		refreshBaseUrlPreview();
+		initThemeCombo();
+	}
+
+	private void initThemeCombo() {
+		themeCombo.setCellFactory(lv -> cell(Theme::getDisplayName));
+		themeCombo.setButtonCell(cell(Theme::getDisplayName));
+		themeCombo.setItems(FXCollections.observableArrayList(ThemeManager.getAvailableThemes()));
+		themeCombo.setValue(ThemeManager.getCurrent());
+		// Pas d'application automatique sur sélection : l'utilisateur doit
+		// cliquer sur « Recharger » pour persiste + appliquer le thème.
+	}
+
+	private static <T> ListCell<T> cell(java.util.function.Function<T, String> text) {
+		return new ListCell<>() {
+			@Override
+			protected void updateItem(T item, boolean empty) {
+				super.updateItem(item, empty);
+				setText(empty || item == null ? null : text.apply(item));
+			}
+		};
+	}
+
+	@FXML
+	public void onReloadThemesClick() {
+		// Rescan du dossier ./themes/ (récupère les nouveaux fichiers .css).
+		ThemeManager.reloadCustomThemes();
+		List<Theme> themes = ThemeManager.getAvailableThemes();
+		Theme selected = themeCombo.getValue();
+		themeCombo.setItems(FXCollections.observableArrayList(themes));
+		// Re-sélectionne le thème choisi s'il est toujours disponible,
+		// sinon retombe sur le thème courant persisté.
+		Theme toApply = themes.contains(selected) ? selected : ThemeManager.getCurrent();
+		themeCombo.setValue(toApply);
+		// Persiste + applique le thème sélectionné.
+		ThemeManager.setCurrent(toApply);
+		// Scène de la fenêtre Paramètres (pop-up).
+		if (hostField.getScene() != null) {
+			ThemeManager.applyTheme(hostField.getScene());
+		}
+		// Scène de la fenêtre principale (propriétaire du pop-up) pour que
+		// le thème s'applique immédiatement au dashboard/incidents derrière.
+		applyThemeToOwner();
+	}
+
+	private void applyThemeToOwner() {
+		if (hostField.getScene() == null) return;
+		javafx.stage.Window settingsWin = hostField.getScene().getWindow();
+		if (settingsWin instanceof javafx.stage.Stage settingsStage) {
+			javafx.stage.Window owner = settingsStage.getOwner();
+			if (owner != null && owner.getScene() != null) {
+				ThemeManager.applyTheme(owner.getScene());
+			}
+		}
 	}
 
 	@FXML
