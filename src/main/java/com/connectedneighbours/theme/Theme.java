@@ -11,8 +11,7 @@ import java.util.Objects;
  * <p>
  * Deux origines :
  * <ul>
- *   <li><b>built-in</b> — embarquée dans le classpath ({@code theme-light.css},
- *       {@code theme-dark.css}, {@code theme-default.css}).</li>
+ *   <li><b>built-in</b> — embarquée dans le classpath ({@code theme-light.css}, {@code theme-dark.css}).</li>
  *   <li><b>personnalisée</b> — un fichier {@code .css} déposé par l'utilisateur
  *       dans le dossier {@code ./themes/} (racine du CWD).</li>
  * </ul>
