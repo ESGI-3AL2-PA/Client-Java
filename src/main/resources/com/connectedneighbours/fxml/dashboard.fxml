@@ -7,7 +7,7 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
             xmlns="http://javafx.com/javafx/21"
             fx:controller="com.connectedneighbours.controller.DashboardController"
-            style="-fx-background-color: #f0f2f5;">
+            styleClass="app-bg">
 
     <!-- HEADER  -->
     <top>
@@ -16,81 +16,59 @@
 
     <!-- CONTENU PRINCIPAL -->
     <center>
-        <ScrollPane fitToWidth="true"
-                    style="-fx-background: transparent; -fx-background-color: transparent;">
+        <ScrollPane fitToWidth="true" styleClass="scroll-transparent">
             <VBox spacing="20">
                 <padding>
                     <Insets top="24" right="24" bottom="24" left="24"/>
                 </padding>
 
                 <!-- Titre de page -->
-                <Label text="Tableau de bord"
-                       style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+                <Label text="Tableau de bord" styleClass="page-title"/>
 
                 <!-- ── CARTES DE STATISTIQUES ── -->
                 <HBox spacing="16">
                     <!-- Incidents ouverts -->
-                    <VBox HBox.hgrow="ALWAYS" spacing="6"
-                          style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                                 -fx-border-color: #e8e8e8; -fx-border-radius: 8;
-                                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+                    <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="Incidents ouverts"
-                               style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
+                        <Label text="Incidents ouverts" styleClass="card-label"/>
                         <Label fx:id="statOpenIncidents" text="—"
-                               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #e74c3c;"/>
-                        <Label fx:id="statOpenTrend" text=""
-                               style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
+                               styleClass="card-value,card-value-open"/>
+                        <Label fx:id="statOpenTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <!-- En cours -->
-                    <VBox HBox.hgrow="ALWAYS" spacing="6"
-                          style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                                 -fx-border-color: #e8e8e8; -fx-border-radius: 8;
-                                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+                    <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="En cours"
-                               style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
+                        <Label text="En cours" styleClass="card-label"/>
                         <Label fx:id="statInProgress" text="—"
-                               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #f39c12;"/>
-                        <Label fx:id="statInProgressTrend" text=""
-                               style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
+                               styleClass="card-value,card-value-progress"/>
+                        <Label fx:id="statInProgressTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <!-- Résolus -->
-                    <VBox HBox.hgrow="ALWAYS" spacing="6"
-                          style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                                 -fx-border-color: #e8e8e8; -fx-border-radius: 8;
-                                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+                    <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="Résolus (30j)"
-                               style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
+                        <Label text="Résolus (30j)" styleClass="card-label"/>
                         <Label fx:id="statResolved" text="—"
-                               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #27ae60;"/>
-                        <Label fx:id="statResolvedTrend" text=""
-                               style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
+                               styleClass="card-value,card-value-resolved"/>
+                        <Label fx:id="statResolvedTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <!-- Non synchronisés -->
-                    <VBox HBox.hgrow="ALWAYS" spacing="6"
-                          style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                                 -fx-border-color: #e8e8e8; -fx-border-radius: 8;
-                                 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+                    <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="Non synchronisés"
-                               style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
+                        <Label text="Non synchronisés" styleClass="card-label"/>
                         <Label fx:id="statUnsynced" text="—"
-                               style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #8e44ad;"/>
-                        <Label text="En attente de sync"
-                               style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
+                               styleClass="card-value,card-value-unsynced"/>
+                        <Label text="En attente de sync" styleClass="card-trend"/>
                     </VBox>
                 </HBox>
 
@@ -98,73 +76,56 @@
                 <HBox spacing="16">
 
                     <!-- Incidents récents -->
-                    <VBox HBox.hgrow="ALWAYS" spacing="12"
-                          style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                                 -fx-border-color: #e8e8e8; -fx-border-radius: 8;">
+                    <VBox HBox.hgrow="ALWAYS" spacing="12" styleClass="card">
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
 
                         <HBox alignment="CENTER_LEFT" spacing="8">
-                            <Label text="Incidents récents"
-                                   style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
+                            <Label text="Incidents récents" styleClass="card-title"/>
                             <Region HBox.hgrow="ALWAYS"/>
                             <Button text="Voir tout" onAction="#onIncidentsClick"
-                                    style="-fx-background-color: transparent;
-                                           -fx-text-fill: #4a6fa5; -fx-cursor: hand;
-                                           -fx-font-size: 12px;"/>
+                                    styleClass="link-button"/>
                         </HBox>
 
                         <TableView fx:id="incidentsTable"
-                                   prefHeight="280"
-                                   style="-fx-background-color: transparent;">
+                                   prefHeight="280" styleClass="table-transparent">
                             <columns>
                                 <TableColumn fx:id="colCategory" text="Catégorie" prefWidth="220"/>
                                 <TableColumn fx:id="colStatus" text="Statut" prefWidth="100"/>
                                 <TableColumn fx:id="colDate" text="Date" prefWidth="140"/>
                             </columns>
                             <placeholder>
-                                <Label text="Aucun incident" style="-fx-text-fill: #aaaaaa;"/>
+                                <Label text="Aucun incident" styleClass="text-faint"/>
                             </placeholder>
                         </TableView>
                     </VBox>
 
                     <!-- Alertes récentes -->
-                    <VBox prefWidth="280" spacing="10"
-                          style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                                 -fx-border-color: #e8e8e8; -fx-border-radius: 8;">
+                    <VBox prefWidth="280" spacing="10" styleClass="card">
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
 
-                        <Label text="Alertes"
-                               style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
+                        <Label text="Alertes" styleClass="card-title"/>
 
                         <VBox fx:id="alertsContainer" spacing="8">
-                            <Label text="Chargement..."
-                                   style="-fx-text-fill: #aaaaaa; -fx-font-size: 12px;"/>
+                            <Label text="Chargement..." styleClass="text-faint"/>
                         </VBox>
                     </VBox>
                 </HBox>
 
                 <!-- ── BOUTONS D'ACTIONS RAPIDES ── -->
-                <VBox spacing="10"
-                      style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-                             -fx-border-color: #e8e8e8; -fx-border-radius: 8;">
+                <VBox spacing="10" styleClass="card">
                     <padding>
                         <Insets top="16" right="16" bottom="16" left="16"/>
                     </padding>
-                    <Label text="Actions rapides"
-                           style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
+                    <Label text="Actions rapides" styleClass="card-title"/>
                     <HBox spacing="10">
                         <Button text="+ Nouvel incident"
-                                onAction="#onNewIncidentClick"
-                                style="-fx-background-color: #4a6fa5; -fx-text-fill: white;
-                                       -fx-background-radius: 4; -fx-cursor: hand; -fx-padding: 8 16 8 16;"/>
+                                onAction="#onNewIncidentClick" styleClass="button-primary"/>
                         <Button text="↗ Exporter stats"
-                                onAction="#onExportClick"
-                                style="-fx-background-color: #8e44ad; -fx-text-fill: white;
-                                       -fx-background-radius: 4; -fx-cursor: hand; -fx-padding: 8 16 8 16;"/>
+                                onAction="#onExportClick" styleClass="button-accent"/>
                     </HBox>
                 </VBox>
 
@@ -174,22 +135,16 @@
 
     <!-- Barre de statut -->
     <bottom>
-        <HBox spacing="8" alignment="CENTER_LEFT"
-              style="-fx-background-color: #f5f5f5;
-                     -fx-border-color: #e0e0e0;
-                     -fx-border-width: 1 0 0 0;">
+        <HBox spacing="8" alignment="CENTER_LEFT" styleClass="status-bar">
             <padding>
                 <Insets top="8" right="8" bottom="8" left="8"/>
             </padding>
             <Circle fx:id="syncStatusDot" radius="6" fill="GRAY"/>
-            <Label fx:id="syncStatusLabel" text="Hors-ligne"
-                   style="-fx-font-size: 12px;"/>
+            <Label fx:id="syncStatusLabel" text="Hors-ligne" styleClass="status-bar-label"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Label fx:id="lastSyncLabel"
-                   style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
+            <Label fx:id="lastSyncLabel" styleClass="status-bar-secondary"/>
             <Button fx:id="syncNowButton" text="Synchroniser maintenant"
-                    onAction="#onSyncNowClick"
-                    style="-fx-font-size: 12px;"/>
+                    onAction="#onSyncNowClick" styleClass="button-ghost"/>
         </HBox>
     </bottom>
 

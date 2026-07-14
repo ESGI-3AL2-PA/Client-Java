@@ -7,26 +7,18 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml/1"
 			xmlns="http://javafx.com/javafx/21"
 			fx:controller="com.connectedneighbours.controller.SettingsController"
-			style="-fx-background-color: #f0f2f5;">
+			styleClass="app-bg">
 
 	<!-- ══════════════ HEADER ══════════════ -->
 	<top>
-		<HBox alignment="CENTER_LEFT" spacing="12"
-			  style="-fx-background-color: #ffffff;
-					 -fx-border-color: #e0e0e0;
-					 -fx-border-width: 0 0 1 0;">
+		<HBox alignment="CENTER_LEFT" spacing="12" styleClass="header">
 			<padding>
 				<Insets top="14" right="20" bottom="14" left="20"/>
 			</padding>
 
-			<Label text="Paramètres"
-				   style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+			<Label text="Paramètres" styleClass="header-title"/>
 			<Region HBox.hgrow="ALWAYS"/>
-			<Button text="Fermer" onAction="#onCloseClick"
-					style="-fx-background-color: transparent;
-						   -fx-border-color: #e0e0e0;
-						   -fx-border-radius: 4;
-						   -fx-cursor: hand;"/>
+			<Button text="Fermer" onAction="#onCloseClick" styleClass="button-ghost"/>
 		</HBox>
 	</top>
 
@@ -37,16 +29,13 @@
 				<Insets top="24" right="24" bottom="24" left="24"/>
 			</padding>
 
-			<VBox spacing="14"
-				  style="-fx-background-color: #ffffff; -fx-background-radius: 8;
-						 -fx-border-color: #e8e8e8; -fx-border-radius: 8;
-						 -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.05), 4, 0, 0, 2);">
+			<!-- ─── Configuration de l'API ─── -->
+			<VBox spacing="14" styleClass="card">
 				<padding>
 					<Insets top="16" right="16" bottom="16" left="16"/>
 				</padding>
 
-				<Label text="Configuration de l’API"
-					   style="-fx-font-size: 15px; -fx-font-weight: bold;"/>
+				<Label text="Configuration de l’API" styleClass="card-title"/>
 
 				<GridPane hgap="12" vgap="10">
 					<columnConstraints>
@@ -55,17 +44,17 @@
 					</columnConstraints>
 
 					<Label text="Schéma" GridPane.rowIndex="0" GridPane.columnIndex="0"
-						   style="-fx-text-fill: #444444;"/>
+						   styleClass="field-label"/>
 					<ChoiceBox fx:id="schemeChoice" prefWidth="200"
 							   GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
 					<Label text="Hôte" GridPane.rowIndex="1" GridPane.columnIndex="0"
-						   style="-fx-text-fill: #444444;"/>
+						   styleClass="field-label"/>
 					<TextField fx:id="hostField" promptText="ex: api.exemple.com ou https://api.exemple.com"
 							   GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
 					<Label text="Port (optionnel)" GridPane.rowIndex="2" GridPane.columnIndex="0"
-						   style="-fx-text-fill: #444444;"/>
+						   styleClass="field-label"/>
 					<TextField fx:id="portField" promptText="ex: 3000 (laisser vide pour 80/443)"
 							   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 				</GridPane>
@@ -73,18 +62,46 @@
 				<Separator/>
 
 				<HBox spacing="8" alignment="CENTER_LEFT">
-					<Label text="URL de base :" style="-fx-text-fill: #444444;"/>
+					<Label text="URL de base :" styleClass="field-label"/>
 					<Label fx:id="baseUrlLabel" text="—"
-						   style="-fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+						   style="-fx-font-weight: bold;" styleClass="header-title"/>
 				</HBox>
 
 				<HBox spacing="10" alignment="CENTER_LEFT">
 					<Button text="Tester la connexion" onAction="#onTestConnectionClick"
-							style="-fx-background-color: #4a6fa5; -fx-text-fill: white;
-								   -fx-background-radius: 4; -fx-cursor: hand; -fx-padding: 8 16 8 16;"/>
+							styleClass="button-primary"/>
 					<Label fx:id="testResultLabel" text=""
 						   style="-fx-font-size: 12px;"/>
 				</HBox>
+			</VBox>
+
+			<!-- ─── Apparence (thèmes) ─── -->
+			<VBox spacing="14" styleClass="card">
+				<padding>
+					<Insets top="16" right="16" bottom="16" left="16"/>
+				</padding>
+
+				<Label text="Apparence" styleClass="card-title"/>
+
+				<GridPane hgap="12" vgap="10">
+					<columnConstraints>
+						<ColumnConstraints minWidth="140"/>
+						<ColumnConstraints hgrow="ALWAYS"/>
+					</columnConstraints>
+
+					<Label text="Thème" GridPane.rowIndex="0" GridPane.columnIndex="0"
+						   styleClass="field-label"/>
+					<HBox spacing="8" alignment="CENTER_LEFT"
+						  GridPane.rowIndex="0" GridPane.columnIndex="1">
+						<ComboBox fx:id="themeCombo" prefWidth="240"/>
+						<Button text="Recharger" onAction="#onReloadThemesClick"
+								styleClass="button-ghost"/>
+					</HBox>
+				</GridPane>
+
+				<Label fx:id="themeHintLabel" styleClass="text-faint"
+					   text="Déposez vos fichiers .css dans le dossier ./themes/ puis cliquez sur Recharger."
+					   wrapText="true"/>
 			</VBox>
 
 			<Region VBox.vgrow="ALWAYS"/>
@@ -93,24 +110,15 @@
 
 	<!-- ══════════════ ACTIONS ══════════════ -->
 	<bottom>
-		<HBox spacing="10" alignment="CENTER_RIGHT"
-			  style="-fx-background-color: #f5f5f5;
-					 -fx-border-color: #e0e0e0;
-					 -fx-border-width: 1 0 0 0;">
+		<HBox spacing="10" alignment="CENTER_RIGHT" styleClass="action-bar">
 			<padding>
 				<Insets top="12" right="16" bottom="12" left="16"/>
 			</padding>
 
-			<Button text="Réinitialiser" onAction="#onResetClick"
-					style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-						   -fx-border-radius: 4; -fx-cursor: hand;"/>
+			<Button text="Réinitialiser" onAction="#onResetClick" styleClass="button-ghost"/>
 			<Region HBox.hgrow="ALWAYS"/>
-			<Button text="Annuler" onAction="#onCancelClick"
-					style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-						   -fx-border-radius: 4; -fx-cursor: hand;"/>
-			<Button text="Enregistrer" onAction="#onSaveClick"
-					style="-fx-background-color: #27ae60; -fx-text-fill: white;
-						   -fx-background-radius: 4; -fx-cursor: hand; -fx-padding: 8 16 8 16;"/>
+			<Button text="Annuler" onAction="#onCancelClick" styleClass="button-ghost"/>
+			<Button text="Enregistrer" onAction="#onSaveClick" styleClass="button-success"/>
 		</HBox>
 	</bottom>
 
