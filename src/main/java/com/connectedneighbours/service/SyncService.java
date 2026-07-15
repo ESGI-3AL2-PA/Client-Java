@@ -6,6 +6,7 @@ import com.connectedneighbours.model.District;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
+import com.connectedneighbours.repository.ApiException;
 import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.UserRepository;
@@ -155,6 +156,27 @@ public class SyncService {
                 incident.setSynced(true);
                 incidentRepo.update(incident);
 
+            } catch (ApiException e) {
+                if (e.isNotFound()) {
+                    // L'incident n'existe pas encore sur le serveur : le créer.
+                    try {
+                        apiClient.post("/incidents", incident);
+                        incident.setSynced(true);
+                        incidentRepo.update(incident);
+                    } catch (IOException postEx) {
+                        java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                                java.util.logging.Level.WARNING,
+                                "Failed to create local incident with id " + incident.getId(),
+                                postEx
+                        );
+                    }
+                } else {
+                    java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                            java.util.logging.Level.WARNING,
+                            "Failed to sync local incident with id " + incident.getId(),
+                            e
+                    );
+                }
             } catch (IOException e) {
                 java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
                         java.util.logging.Level.WARNING,

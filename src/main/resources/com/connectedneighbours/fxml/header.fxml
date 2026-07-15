@@ -7,47 +7,29 @@
       xmlns="http://javafx.com/javafx/21"
       fx:controller="com.connectedneighbours.controller.HeaderController"
       alignment="CENTER_LEFT" spacing="16"
-      style="-fx-background-color: #ffffff;
-             -fx-border-color: #e0e0e0;
-             -fx-border-width: 0 0 1 0;">
+      styleClass="header">
     <padding>
         <Insets top="14" right="20" bottom="14" left="20"/>
     </padding>
 
-    <Label text="Connected Neighbours"
-           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
-    <Label text="Admin"
-           style="-fx-font-size: 12px; -fx-text-fill: #ffffff;
-                  -fx-background-color: #4a6fa5;
-                  -fx-background-radius: 4; -fx-padding: 2 8 2 8;"/>
+    <Label text="Connected Neighbours" styleClass="header-title"/>
+    <Label text="Admin" styleClass="accent-badge"/>
     <Label fx:id="currentUserLabel" text=""
-           style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
+           style="-fx-font-size: 12px;" styleClass="text-faint"/>
 
     <!-- Spacer -->
     <Region HBox.hgrow="ALWAYS"/>
 
     <Button fx:id="btnDashboard" text="Dashboard"
-            onAction="#onDashboardClick"
-            style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-                   -fx-border-radius: 4; -fx-cursor: hand;"/>
+            onAction="#onDashboardClick" styleClass="nav-button"/>
     <Button fx:id="btnIncidents" text="Incidents"
-            onAction="#onIncidentsClick"
-            style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-                   -fx-border-radius: 4; -fx-cursor: hand;"/>
+            onAction="#onIncidentsClick" styleClass="nav-button"/>
     <Button fx:id="btnUsers" text="Utilisateurs"
-            onAction="#onUsersClick"
-            style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-                   -fx-border-radius: 4; -fx-cursor: hand;"/>
+            onAction="#onUsersClick" styleClass="nav-button"/>
     <Button fx:id="btnStatistics" text="Statistiques"
-            onAction="#onStatisticsClick"
-            style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-                   -fx-border-radius: 4; -fx-cursor: hand;"/>
+            onAction="#onStatisticsClick" styleClass="nav-button"/>
     <Button fx:id="btnSettings" text="Paramètres"
-            onAction="#onSettingsClick"
-            style="-fx-background-color: transparent; -fx-border-color: #e0e0e0;
-                   -fx-border-radius: 4; -fx-cursor: hand;"/>
+            onAction="#onSettingsClick" styleClass="nav-button"/>
     <Button fx:id="btnLogout" text="Déconnexion"
-            onAction="#onLogoutClick"
-            style="-fx-background-color: #e74c3c; -fx-text-fill: white;
-                   -fx-background-radius: 4; -fx-cursor: hand;"/>
+            onAction="#onLogoutClick" styleClass="nav-button-logout"/>
 </HBox>
