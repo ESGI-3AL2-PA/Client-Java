@@ -3,9 +3,11 @@ package com.connectedneighbours.service;
 import com.connectedneighbours.config.ApiConfig;
 import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.Incident;
+import com.connectedneighbours.model.Statistic;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
 import com.connectedneighbours.repository.IncidentRepository;
+import com.connectedneighbours.repository.StatisticRepository;
 import com.connectedneighbours.repository.UserRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +16,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.Timer;
@@ -22,9 +27,11 @@ import java.util.TimerTask;
 public class SyncService {
 
     private static final int SYNC_INTERVAL_SECONDS = 30;
+    private static final DateTimeFormatter PERIOD_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final IncidentRepository incidentRepo;
     private final UserRepository userRepo;
+    private final StatisticRepository statisticRepo;
     private final ApiClient apiClient;
     private final ObjectMapper mapper;
     private final ConnectivityChecker connectivityChecker;
@@ -41,6 +48,7 @@ public class SyncService {
                 apiClient,
                 new IncidentRepository(),
                 new UserRepository(),
+                new StatisticRepository(),
                 JacksonConfig.get(),
                 SyncService::defaultConnectivityCheck,
                 javafx.application.Platform::runLater
@@ -55,9 +63,22 @@ public class SyncService {
             ConnectivityChecker connectivityChecker,
             UiExecutor uiExecutor
     ) {
+        this(apiClient, incidentRepo, userRepo, new StatisticRepository(), mapper, connectivityChecker, uiExecutor);
+    }
+
+    SyncService(
+            ApiClient apiClient,
+            IncidentRepository incidentRepo,
+            UserRepository userRepo,
+            StatisticRepository statisticRepo,
+            ObjectMapper mapper,
+            ConnectivityChecker connectivityChecker,
+            UiExecutor uiExecutor
+    ) {
         this.apiClient = apiClient;
         this.incidentRepo = incidentRepo;
         this.userRepo = userRepo;
+        this.statisticRepo = statisticRepo;
         this.mapper = mapper;
         this.connectivityChecker = connectivityChecker;
         this.uiExecutor = uiExecutor;
@@ -119,11 +140,12 @@ public class SyncService {
             pushLocalIncidents();
             pullRemoteIncidents();
             pullRemoteUsers();
+            pullStatistics();
             notifyStatus(SyncStatus.SUCCESS);
         } catch (com.connectedneighbours.auth.exception.TokenUnavailableException e) {
-            // plus d'access token --> relance le login navigateur.
             notifyStatus(SyncStatus.AUTH_REQUIRED);
         } catch (Exception e) {
+            e.printStackTrace();
             notifyStatus(SyncStatus.ERROR);
         } finally {
             isSyncing = false;
@@ -200,6 +222,59 @@ public class SyncService {
                 userRepo.update(resolved);
             }
         }
+    }
+
+    private void pullStatistics() {
+        String today = LocalDate.now().format(PERIOD_FMT);
+
+        fetchIncidentStats(today);
+        fetchTotal("/users?page=1&limit=1", "users.total", today);
+        fetchTotal("/listings?page=1&limit=1", "listings.total", today);
+        fetchTotal("/events?page=1&limit=1", "events.total", today);
+        fetchTotal("/votes?page=1&limit=1", "votes.total", today);
+    }
+
+    private void fetchIncidentStats(String period) {
+        try {
+            JsonNode root = mapper.readTree(apiClient.get("/incidents/stats"));
+
+            upsertStatistic("incidents.total", root.path("total").asDouble(0), period);
+            root.path("byStatus").fields().forEachRemaining(entry ->
+                    upsertStatistic("incidents.status." + entry.getKey(), entry.getValue().asDouble(0), period));
+            root.path("byCategory").fields().forEachRemaining(entry ->
+                    upsertStatistic("incidents.category." + entry.getKey(), entry.getValue().asDouble(0), period));
+        } catch (Exception e) {
+            logStatsWarning("/incidents/stats", e);
+        }
+    }
+
+    private void fetchTotal(String endpoint, String metricKey, String period) {
+        try {
+            JsonNode root = mapper.readTree(apiClient.get(endpoint));
+            upsertStatistic(metricKey, root.path("total").asDouble(0), period);
+        } catch (Exception e) {
+            logStatsWarning(endpoint, e);
+        }
+    }
+
+    private void upsertStatistic(String metricKey, double value, String period) {
+        List<Statistic> existing = statisticRepo.findByMetricKeyAndPeriod(metricKey, period);
+        if (existing.isEmpty()) {
+            statisticRepo.save(new Statistic(metricKey, value, period));
+        } else {
+            Statistic stat = existing.get(0);
+            stat.setMetricValue(value);
+            stat.setRecordedAt(LocalDateTime.now());
+            statisticRepo.update(stat);
+        }
+    }
+
+    private void logStatsWarning(String endpoint, Exception e) {
+        java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                java.util.logging.Level.WARNING,
+                "Failed to pull statistics from " + endpoint,
+                e
+        );
     }
 
     /**

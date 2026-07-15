@@ -271,7 +271,37 @@ public class DashboardController {
 
     @FXML
     public void onStatisticsClick() {
-        System.out.println("[TODO] Ouvrir écran statistiques");
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/connectedneighbours/fxml/Statistics.fxml")
+            );
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+
+            stage.setTitle("Statistique - onnected Neighbours");
+            stage.initOwner(btnStatistics.getScene().getWindow());
+            stage.initModality(Modality.WINDOW_MODAL);
+
+            Scene scene = new Scene(root, 900, 650);
+
+            try {
+                scene.getStylesheets().add(
+                        getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
+                );
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+            stage.setScene(scene);
+            stage.setResizable(true);
+            stage.showAndWait();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Impossible d'ouvrir la page statistique : " + e.getMessage());
+        }
+
     }
 
     @FXML
