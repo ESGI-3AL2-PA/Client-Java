@@ -43,9 +43,19 @@ public class UserRepository {
         }
     }
 
+    public List<User> findAdminsByDistrictId(String districtId) {
+        String sql = "SELECT * FROM users WHERE role = 'admin' AND districtId = ?";
+        try {
+            return DatabaseUtil.executeQuery(sql, this::extractUser, districtId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return List.of();
+        }
+    }
+
     public void save(User user) {
-        String sql = "INSERT INTO users (id, email, firstName, lastName, phone, role, status, balance, created_at, updated_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO users (id, email, firstName, lastName, phone, role, status, balance, districtId, created_at, updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try {
             DatabaseUtil.executeUpdate(sql,
                     user.getId(),
@@ -56,6 +66,7 @@ public class UserRepository {
                     user.getRole(),
                     user.getStatus(),
                     user.getBalance(),
+                    user.getDistrictId(),
                     user.getCreatedAt() != null ? Timestamp.valueOf(user.getCreatedAt()) : null,
                     user.getUpdatedAt() != null ? Timestamp.valueOf(user.getUpdatedAt()) : null
             );
@@ -65,7 +76,7 @@ public class UserRepository {
     }
 
     public void update(User user) {
-        String sql = "UPDATE users SET email = ?, firstName = ?, lastName = ?, phone = ?, role = ?, status = ?, balance = ?, created_at = ?, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE users SET email = ?, firstName = ?, lastName = ?, phone = ?, role = ?, status = ?, balance = ?, districtId = ?, created_at = ?, updated_at = ? WHERE id = ?";
         try {
             DatabaseUtil.executeUpdate(sql,
                     user.getEmail(),
@@ -75,6 +86,7 @@ public class UserRepository {
                     user.getRole(),
                     user.getStatus(),
                     user.getBalance(),
+                    user.getDistrictId(),
                     user.getCreatedAt() != null ? Timestamp.valueOf(user.getCreatedAt()) : null,
                     user.getUpdatedAt() != null ? Timestamp.valueOf(user.getUpdatedAt()) : null,
                     user.getId()
@@ -102,6 +114,7 @@ public class UserRepository {
         user.setPhone(rs.getString("phone"));
         user.setRole(rs.getString("role"));
         user.setStatus(rs.getString("status"));
+        user.setDistrictId(rs.getString("districtId"));
 
         double balance = rs.getDouble("balance");
         if (!rs.wasNull()) {

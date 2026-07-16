@@ -1,6 +1,7 @@
 package com.connectedneighbours.repository;
 
 import com.connectedneighbours.config.ApiConfig;
+import com.connectedneighbours.config.JacksonConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 
@@ -12,7 +13,7 @@ public class ApiClient {
     private static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
 
     private final OkHttpClient client = new OkHttpClient();
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = JacksonConfig.get();
 
     /**
      * Fournisseur du Bearer token. Par défaut renvoie null (pas d'auth).
@@ -62,7 +63,7 @@ public class ApiClient {
             if (!response.isSuccessful()) {
                 ResponseBody responseBody = response.body();
                 String responseBodyText = responseBody != null ? responseBody.string() : "corps vide";
-                throw new IOException("Erreur HTTP : " + response.code() + " : " + responseBodyText);
+                throw new ApiException(response.code(), "Erreur HTTP : " + response.code() + " : " + responseBodyText);
             }
             return response.body().string();
         }
@@ -78,7 +79,11 @@ public class ApiClient {
         Request request = rb.build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Erreur HTTP: " + response.code());
+            if (!response.isSuccessful()) {
+                ResponseBody responseBody = response.body();
+                String responseBodyText = responseBody != null ? responseBody.string() : "corps vide";
+                throw new ApiException(response.code(), "Erreur HTTP : " + response.code() + " : " + responseBodyText);
+            }
             return response.body().string();
         }
     }
@@ -93,7 +98,11 @@ public class ApiClient {
         Request request = rb.build();
 
         try (Response response = client.newCall(request).execute()) {
-            if (!response.isSuccessful()) throw new IOException("Erreur HTTP: " + response.code());
+            if (!response.isSuccessful()) {
+                ResponseBody responseBody = response.body();
+                String responseBodyText = responseBody != null ? responseBody.string() : "corps vide";
+                throw new ApiException(response.code(), "Erreur HTTP : " + response.code() + " : " + responseBodyText);
+            }
             return response.body().string();
         }
     }

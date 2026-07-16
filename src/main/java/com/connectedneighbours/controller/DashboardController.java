@@ -4,48 +4,24 @@ import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.Alert;
 import com.connectedneighbours.model.Incident;
-import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.AlertRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.service.SyncService;
-import com.connectedneighbours.service.SyncStatus;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class DashboardController {
+public class DashboardController extends BaseController {
 
-    private static final DateTimeFormatter DATE_FMT =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-    // Header
-    @FXML
-    private Button btnIncidents;
-    @FXML
-    private Button btnUsers;
-    @FXML
-    private Button btnStatistics;
-    @FXML
-    private Button btnSettings;
-    @FXML
-    private Button btnLogout;
-    @FXML
-    private Label currentUserLabel;
     //  Cartes de stats
     @FXML
     private Label statOpenIncidents;
@@ -69,32 +45,19 @@ public class DashboardController {
     @FXML
     private TableColumn<Incident, String> colStatus;
     @FXML
-    private TableColumn<Incident, java.time.LocalDateTime> colDate;
+    private TableColumn<Incident, LocalDateTime> colDate;
     //  Alertes
     @FXML
     private VBox alertsContainer;
-    //  Barre de statut
-    @FXML
-    private Circle syncStatusDot;
-    @FXML
-    private Label syncStatusLabel;
-    @FXML
-    private Label lastSyncLabel;
-    @FXML
-    private Button syncNowButton;
-    //  Services
-    private AppContext appContext;
-    private SyncService syncService;
+    //  Repositories
     private IncidentRepository incidentRepo;
     private AlertRepository alertRepo;
-    private boolean reloginRequested = false;
 
     public DashboardController() {
     }
 
     public DashboardController(AppContext appContext, SyncService syncService) {
-        this.appContext = appContext;
-        this.syncService = syncService;
+        super(appContext, syncService);
         this.incidentRepo = new IncidentRepository();
         this.alertRepo = new AlertRepository();
     }
@@ -109,17 +72,13 @@ public class DashboardController {
         }
         setupTable();
         loadData();
-        if (syncService != null) {
-            syncService.setStatusListener(this::updateSyncUI);
-        }
-        refreshCurrentUserLabel();
+        setupSync();
+        setupHeader(Page.DASHBOARD);
     }
 
-    private void refreshCurrentUserLabel() {
-        if (currentUserLabel == null) return;
-        User u = appContext != null ? appContext.getCurrentUser() : null;
-        String txt = (u == null) ? "" : (u.getEmail());
-        currentUserLabel.setText(txt);
+    @Override
+    protected void onSyncSuccess() {
+        loadData();
     }
 
     //  Config du TableView
@@ -131,7 +90,7 @@ public class DashboardController {
         colDate.setCellValueFactory(new PropertyValueFactory<>("createdAt"));
         colDate.setCellFactory(col -> new TableCell<>() {
             @Override
-            protected void updateItem(java.time.LocalDateTime item, boolean empty) {
+            protected void updateItem(LocalDateTime item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
                     setText(null);
@@ -217,7 +176,8 @@ public class DashboardController {
 
         if (alerts.isEmpty()) {
             Label empty = new Label("Aucune alerte récente");
-            empty.setStyle("-fx-text-fill: #aaaaaa; -fx-font-size: 12px;");
+            empty.getStyleClass().add("text-faint");
+            empty.setStyle("-fx-font-size: 12px;");
             alertsContainer.getChildren().add(empty);
             return;
         }
@@ -244,7 +204,8 @@ public class DashboardController {
 
     //  Détail d'un incident (double-clic) 
     private void onIncidentDoubleClick(Incident incident) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
+        javafx.scene.control.Alert alert =
+                new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
         alert.setTitle("Détail incident");
         alert.setHeaderText(incident.getCategory());
         alert.setContentText(
@@ -258,104 +219,14 @@ public class DashboardController {
         alert.showAndWait();
     }
 
-    //  Actions 
+    //  Actions
+
     @FXML
     public void onIncidentsClick() {
-        System.out.println("[TODO] Ouvrir écran incidents");
-    }
-
-    @FXML
-    public void onUsersClick() {
-        System.out.println("[TODO] Ouvrir écran utilisateurs");
-    }
-
-    @FXML
-    public void onStatisticsClick() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/connectedneighbours/fxml/Statistics.fxml")
-            );
-            Parent root = loader.load();
-
-            Stage stage = new Stage();
-
-            stage.setTitle("Statistique - onnected Neighbours");
-            stage.initOwner(btnStatistics.getScene().getWindow());
-            stage.initModality(Modality.WINDOW_MODAL);
-
-            Scene scene = new Scene(root, 900, 650);
-
-            try {
-                scene.getStylesheets().add(
-                        getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
-                );
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-
-            stage.setScene(scene);
-            stage.setResizable(true);
-            stage.showAndWait();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            showError("Impossible d'ouvrir la page statistique : " + e.getMessage());
-        }
-
-    }
-
-    @FXML
-    public void onSettingsClick() {
-        try {
-            FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/com/connectedneighbours/fxml/settings.fxml")
-            );
-            Parent root = loader.load();
-
-            Stage stage = new Stage();
-            stage.setTitle("Paramètres — Connected Neighbours");
-            stage.initOwner(btnSettings.getScene().getWindow());
-            stage.initModality(Modality.WINDOW_MODAL);
-
-            Scene scene = new Scene(root, 720, 520);
-            try {
-                scene.getStylesheets().add(
-                        getClass().getResource("/com/connectedneighbours/css/theme-light.css").toExternalForm()
-                );
-            } catch (Exception ignored) {
-                // Thème optionnel
-            }
-
-            stage.setScene(scene);
-            stage.setResizable(false);
-            stage.showAndWait();
-
-            // Rafraîchit les infos après fermeture (au cas où l'URL API aurait changé).
-            loadData();
-        } catch (Exception e) {
-            showError("Impossible d'ouvrir les paramètres : " + e.getMessage());
-        }
-    }
-
-    @FXML
-    public void onLogoutClick() {
-        if (appContext == null) return;
-        javafx.scene.control.Alert confirm = new javafx.scene.control.Alert(
-                javafx.scene.control.Alert.AlertType.CONFIRMATION,
-                "Se déconnecter ?",
-                ButtonType.YES, ButtonType.NO
-        );
-        confirm.setTitle("Déconnexion");
-        confirm.setHeaderText(null);
-        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
-
-        appContext.logout();
-        Stage stage = (Stage) btnLogout.getScene().getWindow();
+        Stage stage = (Stage) syncNowButton.getScene().getWindow();
         Object mainApp = stage.getUserData();
         if (mainApp instanceof MainApp app) {
-            app.backToLogin();
-        } else {
-            stage.close();
+            app.showIncidents();
         }
     }
 
@@ -368,55 +239,6 @@ public class DashboardController {
     public void onNewIncidentClick() {
         // TODO : ouvrir une dialog de création d'incident
         System.out.println("[TODO] Créer un nouvel incident");
-    }
-
-    @FXML
-    public void onSyncNowClick() {
-        if (syncService != null) {
-            syncNowButton.setDisable(true);
-            syncService.syncNow();
-        }
-    }
-
-    //  Mise à jour de la barre de sync
-    private void updateSyncUI(SyncStatus status) {
-        switch (status) {
-            case OFFLINE -> {
-                syncStatusLabel.setText("Hors-ligne");
-                syncStatusDot.setFill(Color.GRAY);
-                syncNowButton.setDisable(false);
-            }
-            case SYNCING -> {
-                syncStatusLabel.setText("Synchronisation en cours...");
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-            }
-            case SUCCESS -> {
-                syncStatusLabel.setText("Synchronisé");
-                syncStatusDot.setFill(Color.GREEN);
-                syncNowButton.setDisable(false);
-                lastSyncLabel.setText("Dernière sync : " + LocalDateTime.now().format(DATE_FMT));
-                loadData(); // rafraîchir les données après une sync réussie
-            }
-            case ERROR -> {
-                syncStatusLabel.setText("Erreur de synchronisation");
-                syncStatusDot.setFill(Color.RED);
-                syncNowButton.setDisable(false);
-            }
-            case AUTH_REQUIRED -> {
-                syncStatusLabel.setText("Reconnexion requise");
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-                if (!reloginRequested) {
-                    reloginRequested = true;
-                    Stage stage = (Stage) btnLogout.getScene().getWindow();
-                    Object mainApp = stage.getUserData();
-                    if (mainApp instanceof MainApp app) {
-                        app.backToLogin();
-                    }
-                }
-            }
-        }
     }
 
     //  Helpers couleurs alertes 
@@ -434,12 +256,5 @@ public class DashboardController {
             case "WARNING" -> "#fefaf0";
             default -> "#f0f7fe";
         };
-    }
-
-    private void showError(String msg) {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.ERROR);
-        alert.setTitle("Erreur");
-        alert.setContentText(msg);
-        alert.showAndWait();
     }
 }

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<HBox xmlns:fx="http://javafx.com/fxml/1"
+      xmlns="http://javafx.com/javafx/21"
+      fx:controller="com.connectedneighbours.controller.HeaderController"
+      alignment="CENTER_LEFT" spacing="16"
+      styleClass="header">
+    <padding>
+        <Insets top="14" right="20" bottom="14" left="20"/>
+    </padding>
+
+    <Label text="Connected Neighbours" styleClass="header-title"/>
+    <Label text="Admin" styleClass="accent-badge"/>
+    <Label fx:id="currentUserLabel" text=""
+           style="-fx-font-size: 12px;" styleClass="text-faint"/>
+
+    <!-- Spacer -->
+    <Region HBox.hgrow="ALWAYS"/>
+
+    <Button fx:id="btnDashboard" text="Dashboard"
+            onAction="#onDashboardClick" styleClass="nav-button"/>
+    <Button fx:id="btnIncidents" text="Incidents"
+            onAction="#onIncidentsClick" styleClass="nav-button"/>
+    <Button fx:id="btnUsers" text="Utilisateurs"
+            onAction="#onUsersClick" styleClass="nav-button"/>
+    <Button fx:id="btnStatistics" text="Statistiques"
+            onAction="#onStatisticsClick" styleClass="nav-button"/>
+    <Button fx:id="btnSettings" text="Paramètres"
+            onAction="#onSettingsClick" styleClass="nav-button"/>
+    <Button fx:id="btnLogout" text="Déconnexion"
+            onAction="#onLogoutClick" styleClass="nav-button-logout"/>
+</HBox>
