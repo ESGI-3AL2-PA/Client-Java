@@ -2,10 +2,13 @@ package com.connectedneighbours.service;
 
 import com.connectedneighbours.config.ApiConfig;
 import com.connectedneighbours.config.JacksonConfig;
+import com.connectedneighbours.model.District;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.Statistic;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
+import com.connectedneighbours.repository.ApiException;
+import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.StatisticRepository;
 import com.connectedneighbours.repository.UserRepository;
@@ -31,6 +34,7 @@ public class SyncService {
 
     private final IncidentRepository incidentRepo;
     private final UserRepository userRepo;
+    private final DistrictRepository districtRepo;
     private final StatisticRepository statisticRepo;
     private final ApiClient apiClient;
     private final ObjectMapper mapper;
@@ -48,7 +52,7 @@ public class SyncService {
                 apiClient,
                 new IncidentRepository(),
                 new UserRepository(),
-                new StatisticRepository(),
+                new DistrictRepository(),
                 JacksonConfig.get(),
                 SyncService::defaultConnectivityCheck,
                 javafx.application.Platform::runLater
@@ -59,18 +63,7 @@ public class SyncService {
             ApiClient apiClient,
             IncidentRepository incidentRepo,
             UserRepository userRepo,
-            ObjectMapper mapper,
-            ConnectivityChecker connectivityChecker,
-            UiExecutor uiExecutor
-    ) {
-        this(apiClient, incidentRepo, userRepo, new StatisticRepository(), mapper, connectivityChecker, uiExecutor);
-    }
-
-    SyncService(
-            ApiClient apiClient,
-            IncidentRepository incidentRepo,
-            UserRepository userRepo,
-            StatisticRepository statisticRepo,
+            DistrictRepository districtRepo,
             ObjectMapper mapper,
             ConnectivityChecker connectivityChecker,
             UiExecutor uiExecutor
@@ -78,7 +71,8 @@ public class SyncService {
         this.apiClient = apiClient;
         this.incidentRepo = incidentRepo;
         this.userRepo = userRepo;
-        this.statisticRepo = statisticRepo;
+        this.districtRepo = districtRepo;
+        this.statisticRepo = new StatisticRepository();
         this.mapper = mapper;
         this.connectivityChecker = connectivityChecker;
         this.uiExecutor = uiExecutor;
@@ -140,12 +134,13 @@ public class SyncService {
             pushLocalIncidents();
             pullRemoteIncidents();
             pullRemoteUsers();
+            pullRemoteDistricts();
             pullStatistics();
             notifyStatus(SyncStatus.SUCCESS);
         } catch (com.connectedneighbours.auth.exception.TokenUnavailableException e) {
+            // plus d'access token --> relance le login navigateur.
             notifyStatus(SyncStatus.AUTH_REQUIRED);
         } catch (Exception e) {
-            e.printStackTrace();
             notifyStatus(SyncStatus.ERROR);
         } finally {
             isSyncing = false;
@@ -170,6 +165,27 @@ public class SyncService {
                 incident.setSynced(true);
                 incidentRepo.update(incident);
 
+            } catch (ApiException e) {
+                if (e.isNotFound()) {
+                    // L'incident n'existe pas encore sur le serveur : le créer.
+                    try {
+                        apiClient.post("/incidents", incident);
+                        incident.setSynced(true);
+                        incidentRepo.update(incident);
+                    } catch (IOException postEx) {
+                        java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                                java.util.logging.Level.WARNING,
+                                "Failed to create local incident with id " + incident.getId(),
+                                postEx
+                        );
+                    }
+                } else {
+                    java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                            java.util.logging.Level.WARNING,
+                            "Failed to sync local incident with id " + incident.getId(),
+                            e
+                    );
+                }
             } catch (IOException e) {
                 java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
                         java.util.logging.Level.WARNING,
@@ -220,6 +236,24 @@ public class SyncService {
                 // Existe déjà : résoudre le conflit
                 User resolved = resolveConflictUser(existing.get(), remote);
                 userRepo.update(resolved);
+            }
+        }
+    }
+
+    public void pullRemoteDistricts() throws IOException {
+        String json = apiClient.get("/districts");
+        JsonNode root = mapper.readTree(json);
+        JsonNode dataNode = root.has("data") ? root.get("data") : root;
+        District[] remoteArray = mapper.treeToValue(dataNode, District[].class);
+        List<District> remoteList = java.util.Arrays.asList(remoteArray);
+
+        for (District remote : remoteList) {
+            Optional<District> existing = districtRepo.findById(remote.getId());
+
+            if (existing.isEmpty()) {
+                districtRepo.save(remote);
+            } else {
+                districtRepo.update(remote);
             }
         }
     }

@@ -30,7 +30,6 @@
             <VBox spacing="20">
                 <padding><Insets top="24" right="24" bottom="24" left="24"/></padding>
 
-                <!-- Rangée 1 : les 5 cartes de totaux, un HBox qui empile horizontalement -->
                 <HBox spacing="16">
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6"
@@ -39,6 +38,7 @@
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Utilisateurs" style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
                         <Label fx:id="statUsersTotal" text="—" style="-fx-font-size: 26px; -fx-font-weight: bold;"/>
+                        <Label fx:id="statUsersTrend" text="" style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6"
@@ -47,6 +47,7 @@
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Annonces" style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
                         <Label fx:id="statListingsTotal" text="—" style="-fx-font-size: 26px; -fx-font-weight: bold;"/>
+                        <Label fx:id="statListingsTrend" text="" style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6"
@@ -55,6 +56,7 @@
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Événements" style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
                         <Label fx:id="statEventsTotal" text="—" style="-fx-font-size: 26px; -fx-font-weight: bold;"/>
+                        <Label fx:id="statEventsTrend" text="" style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6"
@@ -63,6 +65,7 @@
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Votes" style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
                         <Label fx:id="statVotesTotal" text="—" style="-fx-font-size: 26px; -fx-font-weight: bold;"/>
+                        <Label fx:id="statVotesTrend" text="" style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6"
@@ -71,6 +74,7 @@
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
                         <Label text="Incidents" style="-fx-font-size: 12px; -fx-text-fill: #888888;"/>
                         <Label fx:id="statIncidentsTotal" text="—" style="-fx-font-size: 26px; -fx-font-weight: bold;"/>
+                        <Label fx:id="statIncidentsTrend" text="" style="-fx-font-size: 11px; -fx-text-fill: #aaaaaa;"/>
                     </VBox>
 
                 </HBox>
