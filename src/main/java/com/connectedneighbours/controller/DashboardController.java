@@ -257,7 +257,7 @@ public class DashboardController extends BaseController {
                 new FileChooser.ExtensionFilter("Fichier JSON", "*.json")
         );
 
-        File file = fileChooser.showSaveDialog(btnSettings.getScene().getWindow());
+        File file = fileChooser.showSaveDialog(syncNowButton.getScene().getWindow());
         if(file == null) {
             return;
         }
