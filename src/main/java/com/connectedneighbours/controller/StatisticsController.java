@@ -9,9 +9,7 @@ import javafx.scene.chart.PieChart;
 import javafx.scene.control.Label;
 import javafx.stage.Stage;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class StatisticsController {
     @FXML private Label statUsersTotal;
@@ -19,24 +17,33 @@ public class StatisticsController {
     @FXML private Label statEventsTotal;
     @FXML private Label statVotesTotal;
     @FXML private Label statIncidentsTotal;
+
+    @FXML private Label statUsersTrend;
+    @FXML private Label statListingsTrend;
+    @FXML private Label statEventsTrend;
+    @FXML private Label statVotesTrend;
+    @FXML private Label statIncidentsTrend;
+
     @FXML private PieChart incidentsByStatusChart;
     @FXML private PieChart incidentsByCategoryChart;
+
+
 
     private final StatisticRepository statisticRepo = new StatisticRepository();
 
     @FXML
     public void initialize() {
         List<Statistic> all = statisticRepo.findAll();
-        Map<String, Statistic> latest = latestByMetricKey(all);
+        Map<String, List<Statistic>> history = historyByMetricKey(all);
 
-        setTotal(statUsersTotal, latest.get("users.total"));
-        setTotal(statListingsTotal, latest.get("listings.total"));
-        setTotal(statEventsTotal, latest.get("events.total"));
-        setTotal(statVotesTotal, latest.get("votes.total"));
-        setTotal(statIncidentsTotal, latest.get("incidents.total"));
+        setTotal(statUsersTotal, statUsersTrend, history.get("users.total"));
+        setTotal(statListingsTotal, statListingsTrend, history.get("listings.total"));
+        setTotal(statEventsTotal, statEventsTrend, history.get("events.total"));
+        setTotal(statVotesTotal, statVotesTrend, history.get("votes.total"));
+        setTotal(statIncidentsTotal, statIncidentsTrend, history.get("incidents.total"));
 
-        populatePieChart(incidentsByStatusChart, latest, "incidents.status.");
-        populatePieChart(incidentsByCategoryChart, latest, "incidents.category.");
+        populatePieChart(incidentsByStatusChart, history, "incidents.status.");
+        populatePieChart(incidentsByCategoryChart, history, "incidents.category.");
     }
 
     @FXML
@@ -45,39 +52,69 @@ public class StatisticsController {
         stage.close();
     }
 
-    private Map<String ,Statistic> latestByMetricKey(List<Statistic> all) {
-        Map<String, Statistic> latest = new HashMap<>();
-        for(Statistic s : all) {
-            Statistic current = latest.get(s.getMetricKey());
-            boolean isNewer = current == null
-                    || current.getRecordedAt() == null
-                    || (s.getRecordedAt() != null && s.getRecordedAt().isAfter(current.getRecordedAt()));
-            if(isNewer) {
-                latest.put(s.getMetricKey(), s);
-            }
+    private Map<String ,List<Statistic>> historyByMetricKey(List<Statistic> all) {
+        Map<String, List<Statistic>> byKey = new HashMap<>();
+        for(Statistic s: all) {
+            byKey.computeIfAbsent(s.getMetricKey(), k-> new ArrayList<>()).add(s);
         }
-        return latest;
+        for (List<Statistic> history : byKey.values()) {
+            history.sort(Comparator.comparing(
+                    Statistic::getRecordedAt,
+                    Comparator.nullsFirst(Comparator.naturalOrder())
+            ));
+        }
+        return byKey;
     }
 
-    public void setTotal(Label label, Statistic stat) {
-        if(stat == null || stat.getMetricKey() == null) {
-            label.setText("_");
+    public void setTotal(Label valueLael, Label trendLabel, List<Statistic> history) {
+        if (history == null || history.isEmpty()) {
+            valueLael.setText("_");
+            trendLabel.setText("_");
+            return;
+        }
+
+        Statistic latest = history.get(history.size() - 1);
+        valueLael.setText(String.valueOf(latest.getMetricValue().intValue()));
+
+        if(history.size() < 2) {
+            trendLabel.setText("Première mesure");
+            return;
+        }
+
+        Statistic previous = history.get(history.size() - 2);
+        int delta = latest.getMetricValue().intValue() - previous.getMetricValue().intValue();
+
+        if (delta > 0) {
+            trendLabel.setText("" + delta + " depuis la dernier sync");
+        } else if (delta < 0) {
+            trendLabel.setText(delta + " depuis la dernier sync");
         } else {
-            label.setText(String.valueOf(stat.getMetricValue().intValue()));
+            trendLabel.setText("Stable");
         }
+
+
     }
 
-    private void populatePieChart(PieChart chart, Map<String, Statistic> latest, String prefix) {
+    private void populatePieChart(PieChart chart, Map<String, List<Statistic>> history, String prefix) {
         ObservableList<PieChart.Data> data = FXCollections.observableArrayList();
-        for (Map.Entry<String, Statistic> entry : latest.entrySet()) {
+
+        for (Map.Entry<String, List<Statistic>> entry : history.entrySet()) {
             if (entry.getKey().startsWith(prefix)) {
-                String sliceName = entry.getKey().substring(prefix.length());
-                Double value = entry.getValue().getMetricValue();
+                List<Statistic> values = entry.getValue();
+                if (values == null || values.isEmpty()) {
+                    continue;
+                }
+
+                Statistic latest = values.get(values.size() - 1);
+                Double value = latest.getMetricValue();
+
                 if (value != null) {
+                    String sliceName = entry.getKey().substring(prefix.length());
                     data.add(new PieChart.Data(sliceName, value));
                 }
             }
         }
+
         chart.setData(data);
     }
 
