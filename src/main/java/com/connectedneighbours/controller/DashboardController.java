@@ -2,10 +2,14 @@ package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
+import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.Alert;
 import com.connectedneighbours.model.Incident;
+import com.connectedneighbours.model.Statistic;
+import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.AlertRepository;
 import com.connectedneighbours.repository.IncidentRepository;
+import com.connectedneighbours.repository.StatisticRepository;
 import com.connectedneighbours.service.SyncService;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -14,9 +18,16 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -232,7 +243,42 @@ public class DashboardController extends BaseController {
 
     @FXML
     public void onExportClick() {
-        System.out.println("[TODO] Exporter les statistiques");
+        List<Statistic> stats = new StatisticRepository().findAll();
+
+        if(stats.isEmpty()) {
+            showError("Aucune statistique à exporter pour le moment.");
+            return;
+        }
+
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Export les statistiques");
+        fileChooser.setInitialFileName("Statistiques_" + LocalDate.now() + ".json");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("Fichier JSON", "*.json")
+        );
+
+        File file = fileChooser.showSaveDialog(btnSettings.getScene().getWindow());
+        if(file == null) {
+            return;
+        }
+
+        try {
+            JacksonConfig.get().writerWithDefaultPrettyPrinter().writeValue(file, stats);
+
+            javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
+                    javafx.scene.control.Alert.AlertType.INFORMATION,
+                    "Statistiques exportées vers :\n" + file.getAbsolutePath(),
+                    ButtonType.OK
+            );
+            alert.setTitle("Export réussi");
+            alert.setHeaderText(null);
+            alert.showAndWait();
+
+        } catch (IOException e) {
+            showError("Impossible d'écrire le fichier : " + e.getMessage());
+        }
+
+
     }
 
     @FXML
