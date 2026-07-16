@@ -113,7 +113,26 @@ public class HeaderController {
 
     @FXML
     public void onStatisticsClick() {
-        System.out.println("[TODO] Ouvrir écran statistiques");
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/connectedneighbours/fxml/statistics.fxml")
+            );
+            Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Statistiques — Connected Neighbours");
+            stage.initOwner(btnStatistics.getScene().getWindow());
+            stage.initModality(Modality.WINDOW_MODAL);
+
+            Scene scene = new Scene(root, 900, 650);
+            ThemeManager.applyTheme(scene);
+
+            stage.setScene(scene);
+            stage.setResizable(true);
+            stage.showAndWait();
+        } catch (Exception e) {
+            showError("Impossible d'ouvrir la page statistique : " + e.getMessage());
+        }
     }
 
     @FXML
