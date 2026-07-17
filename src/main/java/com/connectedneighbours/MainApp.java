@@ -5,6 +5,7 @@ import com.connectedneighbours.controller.DashboardController;
 import com.connectedneighbours.controller.HeaderController;
 import com.connectedneighbours.controller.IncidentController;
 import com.connectedneighbours.model.User;
+import com.connectedneighbours.plugin.PluginManager;
 import com.connectedneighbours.repository.DatabaseManager;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.theme.ThemeManager;
@@ -36,9 +37,11 @@ public class MainApp extends Application {
 
         ThemeManager.reloadCustomThemes();
 
+        PluginManager.init(appContext);
+        PluginManager.loadAll();
+
         // Mode offline-first : si un dernier utilisateur est mémorisé
         // ET que la base H2 locale contient des données --> skip le login SSO et on ouvre directement le dashboard.
-        // L'utilisateur pourra relancer un login navigateur via le bouton "Déconnexion".
         User restored = SessionConfig.loadLastUser().orElse(null);
         if (restored != null && hasLocalData()) {
             appContext.setCurrentUser(restored);
@@ -225,6 +228,7 @@ public class MainApp extends Application {
 
     @Override
     public void stop() throws Exception {
+        PluginManager.shutdownAll();
         if (syncService != null) syncService.stop();
         DatabaseManager.close();
     }
