@@ -89,6 +89,7 @@
 .card-value {                         /* grosse valeur d'une carte stat */
     -fx-font-size: 28px;
     -fx-font-weight: bold;
+    -fx-text-fill: #1a1a2e;
 }
 .card-trend {                         /* petite ligne sous une valeur */
     -fx-font-size: 11px;
@@ -145,6 +146,23 @@
 /* Textes secondaires */
 .text-muted { -fx-text-fill: #444444; }
 .text-faint { -fx-text-fill: #aaaaaa; }
+
+/* Graphiques (PieChart) */
+.chart-title {
+    -fx-text-fill: #1a1a2e;
+}
+.chart-pie-label {
+    -fx-fill: #1a1a2e;
+}
+.chart-legend {
+    -fx-background-color: transparent;
+}
+.chart-legend-item-symbol {
+    -fx-background-radius: 0;
+}
+.chart-legend-item {
+    -fx-text-fill: #444444;
+}
 
 /* Barre de statut en bas (sync) */
 .status-bar {

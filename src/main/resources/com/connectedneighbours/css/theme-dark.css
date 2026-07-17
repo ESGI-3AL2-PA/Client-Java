@@ -86,6 +86,7 @@
 .card-value {
     -fx-font-size: 28px;
     -fx-font-weight: bold;
+    -fx-text-fill: #e0e0e0;
 }
 
 .card-trend {
@@ -153,6 +154,23 @@
 
 .text-faint {
     -fx-text-fill: #777777;
+}
+
+/* ── Graphiques (PieChart) ── */
+.chart-title {
+    -fx-text-fill: #e0e0e0;
+}
+.chart-pie-label {
+    -fx-fill: #e0e0e0;
+}
+.chart-legend {
+    -fx-background-color: transparent;
+}
+.chart-legend-item-symbol {
+    -fx-background-radius: 0;
+}
+.chart-legend-item {
+    -fx-text-fill: #b0b0c0;
 }
 
 /* ── Barre de statut ── */
