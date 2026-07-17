@@ -12,24 +12,31 @@ import javafx.stage.Stage;
 import java.util.*;
 
 public class StatisticsController {
-    @FXML private Label statUsersTotal;
-    @FXML private Label statListingsTotal;
-    @FXML private Label statEventsTotal;
-    @FXML private Label statVotesTotal;
-    @FXML private Label statIncidentsTotal;
-
-    @FXML private Label statUsersTrend;
-    @FXML private Label statListingsTrend;
-    @FXML private Label statEventsTrend;
-    @FXML private Label statVotesTrend;
-    @FXML private Label statIncidentsTrend;
-
-    @FXML private PieChart incidentsByStatusChart;
-    @FXML private PieChart incidentsByCategoryChart;
-
-
-
     private final StatisticRepository statisticRepo = new StatisticRepository();
+    @FXML
+    private Label statUsersTotal;
+    @FXML
+    private Label statListingsTotal;
+    @FXML
+    private Label statEventsTotal;
+    @FXML
+    private Label statVotesTotal;
+    @FXML
+    private Label statIncidentsTotal;
+    @FXML
+    private Label statUsersTrend;
+    @FXML
+    private Label statListingsTrend;
+    @FXML
+    private Label statEventsTrend;
+    @FXML
+    private Label statVotesTrend;
+    @FXML
+    private Label statIncidentsTrend;
+    @FXML
+    private PieChart incidentsByStatusChart;
+    @FXML
+    private PieChart incidentsByCategoryChart;
 
     @FXML
     public void initialize() {
@@ -52,10 +59,10 @@ public class StatisticsController {
         stage.close();
     }
 
-    private Map<String ,List<Statistic>> historyByMetricKey(List<Statistic> all) {
+    private Map<String, List<Statistic>> historyByMetricKey(List<Statistic> all) {
         Map<String, List<Statistic>> byKey = new HashMap<>();
-        for(Statistic s: all) {
-            byKey.computeIfAbsent(s.getMetricKey(), k-> new ArrayList<>()).add(s);
+        for (Statistic s : all) {
+            byKey.computeIfAbsent(s.getMetricKey(), k -> new ArrayList<>()).add(s);
         }
         for (List<Statistic> history : byKey.values()) {
             history.sort(Comparator.comparing(
@@ -66,17 +73,17 @@ public class StatisticsController {
         return byKey;
     }
 
-    public void setTotal(Label valueLael, Label trendLabel, List<Statistic> history) {
+    public void setTotal(Label valueLabel, Label trendLabel, List<Statistic> history) {
         if (history == null || history.isEmpty()) {
-            valueLael.setText("_");
+            valueLabel.setText("_");
             trendLabel.setText("_");
             return;
         }
 
         Statistic latest = history.get(history.size() - 1);
-        valueLael.setText(String.valueOf(latest.getMetricValue().intValue()));
+        valueLabel.setText(String.valueOf(latest.getMetricValue().intValue()));
 
-        if(history.size() < 2) {
+        if (history.size() < 2) {
             trendLabel.setText("Première mesure");
             return;
         }
