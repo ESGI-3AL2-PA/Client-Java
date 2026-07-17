@@ -3,6 +3,7 @@ package com.connectedneighbours.controller;
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.model.User;
+import com.connectedneighbours.plugin.PluginManager;
 import com.connectedneighbours.theme.ThemeManager;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -12,6 +13,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -40,6 +42,8 @@ public class HeaderController {
     private Button btnStatistics;
     @FXML
     private Button btnSettings;
+    @FXML
+    private MenuButton btnPlugins;
     @FXML
     private Button btnLogout;
     @FXML
@@ -157,6 +161,16 @@ public class HeaderController {
         } catch (Exception e) {
             showError("Impossible d'ouvrir les paramètres : " + e.getMessage());
         }
+    }
+
+    @FXML
+    public void onSocialAnalysisClick() {
+        PluginManager.execute("SocialAnalysisPlugin", appContext);
+    }
+
+    @FXML
+    public void onLocalCalendarClick() {
+        PluginManager.execute("LocalCalendarPlugin", appContext);
     }
 
     @FXML

@@ -28,6 +28,12 @@
             onAction="#onUsersClick" styleClass="nav-button"/>
     <Button fx:id="btnStatistics" text="Statistiques"
             onAction="#onStatisticsClick" styleClass="nav-button"/>
+    <MenuButton fx:id="btnPlugins" text="Plugins" styleClass="nav-button">
+        <items>
+            <MenuItem text="Analyse sociale" onAction="#onSocialAnalysisClick"/>
+            <MenuItem text="Calendrier local" onAction="#onLocalCalendarClick"/>
+        </items>
+    </MenuButton>
     <Button fx:id="btnSettings" text="Paramètres"
             onAction="#onSettingsClick" styleClass="nav-button"/>
     <Button fx:id="btnLogout" text="Déconnexion"
