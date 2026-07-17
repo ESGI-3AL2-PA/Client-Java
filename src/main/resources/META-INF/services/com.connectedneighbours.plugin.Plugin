@@ -1,1 +1,4 @@
 com.connectedneighbours.plugin.plugins.HelloPlugin
+com.connectedneighbours.plugin.plugins.SocialAnalysisPlugin
+com.connectedneighbours.plugin.plugins.LocalCalendarPlugin
+com.connectedneighbours.plugin.plugins.HelloPlugin

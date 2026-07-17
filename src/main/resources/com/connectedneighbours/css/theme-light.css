@@ -59,6 +59,14 @@
     -fx-cursor: hand;
 }
 
+.nav-button .label {
+    -fx-text-fill: #444444;
+}
+
+.nav-button .arrow-button .arrow {
+    -fx-background-color: #888888;
+}
+
 /* ── Titre de page ── */
 .page-title {
     -fx-font-size: 22px;
@@ -331,6 +339,25 @@
 .context-menu .menu-item:hover .label,
 .context-menu .menu-item:focused .label {
     -fx-text-fill: #ffffff;
+}
+
+/* ── MenuButton ── */
+.menu-button .label {
+    -fx-text-fill: #1a1a2e;
+}
+.menu-button .arrow-button .arrow {
+    -fx-background-color: #888888;
+}
+.menu-item .label {
+    -fx-text-fill: #1a1a2e;
+}
+.menu-item:hover .label,
+.menu-item:focused .label {
+    -fx-text-fill: #ffffff;
+}
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: #4a6fa5;
 }
 
 /* ── ComboBox ── */
