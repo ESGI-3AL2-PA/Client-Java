@@ -140,9 +140,9 @@ com.connectedneighbours/
 │   ├── PluginManager.java           # Chargement hybride (built-in + JARs externes)
 │   └── plugins/
 │       ├── HelloPlugin.java         # Plugin de validation ServiceLoader
-│       ├── ExportStatsPlugin.java   # Export CSV/PDF (echafaude)
-│       ├── SocialAnalysisPlugin.java# Analyse interactions (echafaude)
-│       └── LocalCalendarPlugin.java # Calendrier quartier (echafaude)
+│       ├── ExportStatsPlugin.java   # Export CSV/PDF (echafaude — fichier vide)
+│       ├── SocialAnalysisPlugin.java# Analyse interactions (implante, UI JavaFX + API)
+│       └── LocalCalendarPlugin.java # Calendrier quartier (implante, UI JavaFX + API)
 │
 ├── theme/                           # Gestion des themes CSS
 │   ├── Theme.java                   # Classe immuable (id, displayName, cssUrl, builtin)
@@ -176,14 +176,14 @@ src/main/resources/
 ├── com/connectedneighbours/
 │   ├── fxml/                        # Vues FXML de l'application
 │   │   ├── dashboard.fxml           # Dashboard principal (151 lignes)
-│   │   ├── header.fxml              # Header de navigation (35 lignes)
+│   │   ├── header.fxml              # Header de navigation (41 lignes)
 │   │   ├── incidents.fxml           # Ecran incidents (96 lignes)
 │   │   ├── settings.fxml            # Parametres API (125 lignes)
 │   │   └── statistics.fxml          # Ecran statistiques (83 lignes)
 │   ├── css/                         # Themes CSS
-│   │   ├── theme-light.css          # Theme clair (405 lignes, par defaut)
-│   │   ├── theme-dark.css           # Theme sombre (426 lignes)
-│   │   └── theme-template.css       # Modele commente pour themes personnalises (181 lignes)
+│   │   ├── theme-light.css          # Theme clair (450 lignes, par defaut)
+│   │   ├── theme-dark.css           # Theme sombre (471 lignes)
+│   │   └── theme-template.css       # Modele commente pour themes personnalises (199 lignes)
 │   └── images/                      # Icones et ressources visuelles
 ├── i18n/                            # Fichiers de traduction
 │   ├── messages_fr.properties       # Francais (vide)
@@ -321,9 +321,11 @@ L'architecture de plugins repose sur `java.util.ServiceLoader` avec un chargemen
    (JARs deposes dans le dossier `./plugins/`).
 3. **Plugins fournis** :
     - `HelloPlugin` : plugin de validation du cycle de vie `ServiceLoader`.
-    - `ExportStatsPlugin` : export des statistiques en CSV ou PDF (echafaude).
-    - `SocialAnalysisPlugin` : analyse des interactions sociales (echafaude).
-    - `LocalCalendarPlugin` : calendrier des evenements du quartier (echafaude).
+    - `ExportStatsPlugin` : export des statistiques en CSV ou PDF (echafaude — fichier vide).
+    - `SocialAnalysisPlugin` : analyse des interactions sociales (implante — UI JavaFX avec
+      onglets, TableView et PieChart, appels API via `ApiClient`).
+    - `LocalCalendarPlugin` : calendrier des evenements du quartier (implante — UI JavaFX avec
+      TableView + filtre, donnees API en asynchrone).
 
 ---
 
@@ -388,7 +390,7 @@ mvn test
 - Dashboard (`dashboard.fxml` + `DashboardController`) — cartes stats, tableau incidents, alertes, barre de sync
 - Ecran Incidents (`incidents.fxml` + `IncidentController`, 609 lignes) — `TableView` complete avec 10 colonnes,
   filtres (statut, categorie), double-clic edition, creation, historique
-- Ecran Statistiques (`statistics.fxml` + `StatisticsController`, 122 lignes) — 5 cartes metriques (utilisateurs,
+- Ecran Statistiques (`statistics.fxml` + `StatisticsController`, 129 lignes) — 5 cartes metriques (utilisateurs,
   annonces, evenements, votes, incidents), 2 PieCharts (incidents par statut et par categorie), `StatisticRepository`
   consomme
 - Parametres API (`settings.fxml` + `SettingsController`, 393 lignes) — config API, test de connexion,
@@ -397,16 +399,20 @@ mvn test
 - SSO complet (`SsoAuthService`, `CallbackServer`, `JwtVerifier`)
 - `ThemeManager` + themes clair/sombre + support themes personnalises via dossier `./themes/`
 - Tous les FXML refactores : styles inline → `styleClass` du vocabulaire CSS partage
-- `PluginManager` (239 lignes) — chargement hybride (built-in `ServiceLoader` + JARs externes `./plugins/`),
+- `PluginManager` (210 lignes) — chargement hybride (built-in `ServiceLoader` + JARs externes `./plugins/`),
   cycle de vie complet (init/execute/shutdown), gestion d'erreurs isolee par plugin
 - `HelloPlugin` — plugin de validation du cycle de vie
+- `SocialAnalysisPlugin` (414 lignes) — UI JavaFX (TabPane, TableView, PieChart) + appels API
+  `/api/social/...` (interactions, top contributeurs)
+- `LocalCalendarPlugin` (212 lignes) — UI JavaFX (TableView + ComboBox de filtre) + appels API
+  `/api/events` en asynchrone (`CompletableFuture`)
 - Mode console (`Launcher` + `ConsoleApp`)
 - Demarrage offline-first (`SessionConfig`)
 - `AppContext` (contexte global partage, injection dans les controleurs)
 
 ### Echafaude (structure prete, logique a completer)
 
-- `ExportStatsPlugin`, `SocialAnalysisPlugin`, `LocalCalendarPlugin` — 3 plugins a implementer
+- `ExportStatsPlugin` — export CSV/PDF des statistiques (fichier vide, seul plugin restant)
 - `I18nManager` + fichiers de traduction (FR/EN/ES, vide)
 - `UpdateService` (auto-update)
 - `ViewLoader` (utilitaire FXML)
