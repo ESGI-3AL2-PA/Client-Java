@@ -1,5 +1,6 @@
 package com.connectedneighbours.config;
 
+import java.util.Set;
 import java.util.prefs.Preferences;
 
 public class AuthConfig {
@@ -10,6 +11,19 @@ public class AuthConfig {
     public static final String JWT_ISSUER = "auth-service";
     public static final String JWT_AUDIENCE = "api";
     public static final String JWKS_PATH = "/.well-known/jwks.json";
+
+    /** Identifiant public de ce client auprès de l'auth-service (pas un secret). */
+    public static final String CLIENT_ID = "admin-desktop";
+    public static final String AUTHORIZE_PATH = "/auth/desktop/authorize";
+    public static final String TOKEN_PATH = "/auth/desktop/token";
+
+    /**
+     * Rôles autorisés à utiliser cette application. L'auth-service refuse déjà
+     * tous les autres au moment du /authorize — ce contrôle est une défense en
+     * profondeur, pas la barrière : elle est côté serveur, hors de portée d'un
+     * patch du jar.
+     */
+    public static final Set<String> ADMIN_ROLES = Set.of("admin", "superAdmin");
     private static final Preferences PREFS = Preferences.userNodeForPackage(AuthConfig.class);
     private static final String KEY_SCHEME = "auth.scheme";
     private static final String KEY_HOST = "auth.host";
@@ -98,6 +112,19 @@ public class AuthConfig {
 
     public static String getJwksUrl() {
         return getBaseUrl() + JWKS_PATH;
+    }
+
+    public static String getAuthorizeUrl() {
+        return getBaseUrl() + AUTHORIZE_PATH;
+    }
+
+    public static String getTokenUrl() {
+        return getBaseUrl() + TOKEN_PATH;
+    }
+
+    /** True si le rôle porté par le token donne accès à l'application. */
+    public static boolean isAdminRole(String role) {
+        return role != null && ADMIN_ROLES.contains(role);
     }
 
     public static void resetToDefaults() {
