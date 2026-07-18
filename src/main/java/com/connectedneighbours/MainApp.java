@@ -1,5 +1,6 @@
 package com.connectedneighbours;
 
+import com.connectedneighbours.config.AuthConfig;
 import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.controller.DashboardController;
 import com.connectedneighbours.controller.HeaderController;
@@ -40,9 +41,18 @@ public class MainApp extends Application {
         PluginManager.init(appContext);
         PluginManager.loadAll();
 
-        // Mode offline-first : si un dernier utilisateur est mémorisé
+        // Mode offline-first : si un dernier utilisateur ADMIN est mémorisé
         // ET que la base H2 locale contient des données --> skip le login SSO et on ouvre directement le dashboard.
+        //
+        // Le contrôle de rôle est indispensable ici : ce chemin ouvre le dashboard
+        // sans login ni token, sur la seule foi d'une ligne en base locale. Sans
+        // lui, un compte non-admin mémorisé une fois garderait un accès complet à
+        // l'interface d'administration hors ligne, indéfiniment.
         User restored = SessionConfig.loadLastUser().orElse(null);
+        if (restored != null && !AuthConfig.isAdminRole(restored.getRole())) {
+            SessionConfig.clearLastUser();
+            restored = null;
+        }
         if (restored != null && hasLocalData()) {
             appContext.setCurrentUser(restored);
             showDashboard();

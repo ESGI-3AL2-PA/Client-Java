@@ -1,12 +1,14 @@
 package com.connectedneighbours.auth;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.connectedneighbours.auth.exception.NotAdminException;
 import com.connectedneighbours.auth.exception.TokenUnavailableException;
 import com.connectedneighbours.config.AuthConfig;
 import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.User;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -23,19 +25,27 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Service d'authentification SSO contre l'auth-service (port 3001).
  *
- * <p>Flow desktop (RFC 8252 loopback redirect) :</p>
+ * <p>Flow desktop : authorization code + PKCE (RFC 8252, application native).
+ * Client <em>public</em> — aucun secret client, le jar n'en garderait aucun.</p>
  * <ol>
  *   <li>Démarre un mini serveur HTTP sur 127.0.0.1 (port dynamique).</li>
- *   <li>Ouvre le navigateur système sur {@code http://localhost:3001/login
- *       ?redirect_uri=http://127.0.0.1:<port>/callback}.</li>
- *   <li>Le navigateur gère le formulaire (et le MFA le cas échéant), puis
- *       redirige vers le callback avec {@code ?access_token=...}.</li>
- *   <li>Si un cookie refresh valide existe (≤7j), la page tente un
- *       /auth/refresh silencieux au chargement → SSO transparent.</li>
+ *   <li>Ouvre le navigateur système sur {@code /auth/desktop/authorize} avec
+ *       {@code state} et {@code code_challenge} (S256).</li>
+ *   <li>Le navigateur gère le formulaire (et le MFA le cas échéant). Si un
+ *       cookie refresh valide existe (≤7j), l'auth-service reconnaît la
+ *       session sans reposer de question → SSO transparent.</li>
+ *   <li>Le callback reçoit un {@code code} à usage unique — jamais le token,
+ *       qui n'a donc plus à transiter par une URL.</li>
+ *   <li>Le code est échangé hors navigateur contre l'access token, lequel est
+ *       vérifié (RS256 + issuer + audience) puis contrôlé sur son rôle.</li>
  *   <li>{@link #getAccessToken()} renvoie le token s'il est valide, sinon
  *       lève {@link TokenUnavailableException} pour déclencher un nouveau
  *       login via le navigateur.</li>
  * </ol>
+ *
+ * <p>Seuls les comptes {@code admin}/{@code superAdmin} obtiennent un code :
+ * l'auth-service refuse les autres au /authorize, et le contrôle est refait
+ * ici en défense en profondeur.</p>
  *
  * <p>Pas de persistance locale du refresh token : il reste dans le navigateur
  * (cookie HttpOnly). L'app Java ne garde que l'access token en mémoire.</p>
@@ -91,29 +101,90 @@ public class SsoAuthService {
      * @return l'utilisateur authentifié (fetch depuis /auth/userinfo)
      */
     public User loginViaBrowser() throws IOException {
-        CallbackServer server = new CallbackServer();
+        PkceChallenge pkce = PkceChallenge.generate();
+        String state = PkceChallenge.randomState();
+
+        CallbackServer server = new CallbackServer(state);
         try {
             server.start();
 
             String redirectUri = server.getCallbackUrl();
-            String loginUrl = AuthConfig.getBaseUrl() + "/login?redirect_uri="
-                    + java.net.URLEncoder.encode(redirectUri,
-                    java.nio.charset.StandardCharsets.UTF_8);
+            openBrowser(buildAuthorizeUrl(redirectUri, state, pkce.challenge()));
 
-            openBrowser(loginUrl);
+            // Le navigateur ne rapporte qu'un code : le token, lui, ne transite
+            // que par l'échange direct ci-dessous.
+            String code = server.waitForCode(LOGIN_TIMEOUT_MS);
+            String token = exchangeCode(code, redirectUri, pkce.verifier());
 
-            String token = server.waitForToken(LOGIN_TIMEOUT_MS);
+            // Vérification réelle (signature RS256 + issuer + audience) avant de
+            // faire quoi que ce soit du token : ce qui arrive du réseau n'est pas
+            // digne de confiance parce qu'il ressemble à un JWT.
+            DecodedJWT jwt = jwtVerifier.verify(token);
+
+            String role = jwt.getClaim("role").asString();
+            if (!AuthConfig.isAdminRole(role)) {
+                throw new NotAdminException(role);
+            }
+
             accessToken.set(token);
-
             return fetchUserInfo();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("Login interrompu", e);
+        } catch (NotAdminException e) {
+            throw e;
         } catch (Exception e) {
             if (e instanceof IOException io) throw io;
             throw new IOException("Login échec: " + e.getMessage(), e);
         } finally {
             server.stop();
+        }
+    }
+
+    private static String enc(String raw) {
+        return java.net.URLEncoder.encode(raw, java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    private String buildAuthorizeUrl(String redirectUri, String state, String codeChallenge) {
+        return AuthConfig.getAuthorizeUrl()
+                + "?response_type=code"
+                + "&client_id=" + enc(AuthConfig.CLIENT_ID)
+                + "&redirect_uri=" + enc(redirectUri)
+                + "&state=" + enc(state)
+                + "&code_challenge=" + enc(codeChallenge)
+                + "&code_challenge_method=S256";
+    }
+
+    /**
+     * Échange le code contre un access token, hors navigateur. Pas de secret
+     * client : c'est le verifier PKCE qui prouve que l'échange vient bien du
+     * processus ayant initié le flow.
+     */
+    private String exchangeCode(String code, String redirectUri, String codeVerifier) throws IOException {
+        FormBody form = new FormBody.Builder()
+                .add("grant_type", "authorization_code")
+                .add("code", code)
+                .add("client_id", AuthConfig.CLIENT_ID)
+                .add("redirect_uri", redirectUri)
+                .add("code_verifier", codeVerifier)
+                .build();
+
+        Request req = new Request.Builder().url(AuthConfig.getTokenUrl()).post(form).build();
+        try (Response res = client.newCall(req).execute()) {
+            ResponseBody rb = res.body();
+            String text = rb != null ? rb.string() : "";
+            if (!res.isSuccessful()) {
+                if (res.code() == 403) {
+                    throw new NotAdminException(null);
+                }
+                throw new IOException("Échange du code échoué (HTTP " + res.code() + "): " + text);
+            }
+            JsonNode node = mapper.readTree(text);
+            String token = textOrNull(node, "access_token");
+            if (token == null || token.isBlank()) {
+                throw new IOException("Réponse du token sans access_token");
+            }
+            return token;
         }
     }
 
