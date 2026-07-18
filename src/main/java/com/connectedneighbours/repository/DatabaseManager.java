@@ -8,7 +8,7 @@ import java.sql.Statement;
 
 public class DatabaseManager {
 
-    private static final String DB_URL = "jdbc:h2:./data/admin_db;DB_CLOSE_ON_EXIT=FALSE";
+    private static final String DB_URL = "jdbc:h2:./data/admin_db;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1";
     private static final String DB_USER = "admin";
     private static final String DB_PASS = "";
     private static final String SQL_INCIDENTS = """
@@ -77,32 +77,35 @@ public class DatabaseManager {
             """;
     private static final String SQL_USERS_ADD_DISTRICT_ID =
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS districtId VARCHAR(36)";
-    private static Connection connection;
+    private static volatile boolean schemaInitialized = false;
 
     public DatabaseManager() {
     }
 
-    public static synchronized Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
-            initSchema();
+    public static Connection getConnection() throws SQLException {
+        Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+        if (!schemaInitialized) {
+            initSchema(conn);
         }
-        return connection;
+        return conn;
     }
 
     public static void close() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
-                System.out.println("Connexion H2 fermée.");
-            }
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
+             Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate("SHUTDOWN");
+            schemaInitialized = false;
+            System.out.println("Base H2 fermée proprement.");
         } catch (SQLException e) {
             System.out.println("Erreur fermeture H2");
         }
     }
 
-    private static void initSchema() throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
+    private static synchronized void initSchema(Connection conn) throws SQLException {
+        if (schemaInitialized) {
+            return;
+        }
+        try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(SQL_INCIDENTS);
             stmt.executeUpdate(SQL_USERS);
             stmt.executeUpdate(SQL_STATISTICS);
@@ -111,5 +114,6 @@ public class DatabaseManager {
             stmt.executeUpdate(SQL_DISTRICTS);
             stmt.executeUpdate(SQL_USERS_ADD_DISTRICT_ID);
         }
+        schemaInitialized = true;
     }
 }

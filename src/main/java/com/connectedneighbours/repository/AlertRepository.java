@@ -2,6 +2,7 @@ package com.connectedneighbours.repository;
 
 import com.connectedneighbours.model.Alert;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,7 +14,8 @@ public class AlertRepository {
     public List<Alert> findRecent(int limit) throws SQLException {
         List<Alert> list = new ArrayList<>();
         String sql = "SELECT * FROM alerts ORDER BY created_at DESC LIMIT ?";
-        try (PreparedStatement ps = DatabaseManager.getConnection().prepareStatement(sql)) {
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, limit);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
