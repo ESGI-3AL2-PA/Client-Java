@@ -146,6 +146,12 @@ public class MainApp extends Application {
                 });
                 Parent root = loader.load();
 
+                // Le listener de statut vient d'être attaché par
+                // setupSync() (initialize() du contrôleur, appelé pendant
+                // loader.load()) : on peut démarrer sans risquer de perdre
+                // le tout premier statut du cycle immédiat.
+                syncService.start();
+
                 Scene scene = new Scene(root, 1280, 800);
                 ThemeManager.applyTheme(scene);
 
@@ -183,6 +189,10 @@ public class MainApp extends Application {
                 });
                 Parent root = loader.load();
 
+                // Cf. showDashboard() : le listener vient d'être attaché,
+                // on démarre maintenant pour ne pas perdre le premier statut.
+                syncService.start();
+
                 Scene scene = new Scene(root, 1280, 800);
                 ThemeManager.applyTheme(scene);
 
@@ -212,12 +222,19 @@ public class MainApp extends Application {
     }
 
     /**
-     * Initialise le SyncService s'il n'est pas encore créé/démarré.
+     * Crée le SyncService s'il n'existe pas encore. Ne le démarre pas :
+     * {@link SyncService#start()} lance un premier cycle sans délai, qui peut
+     * s'exécuter (et échouer côté auth pour un utilisateur restauré hors
+     * ligne) avant que l'écran n'ait eu le temps d'attacher son
+     * statusListener via setupSync(). Ce premier statut serait alors perdu
+     * (notifyStatus l'ignore silencieusement si personne n'écoute encore),
+     * et avec lui le déclenchement du re-login — la synchro ne repart
+     * qu'au tick suivant, 30s plus tard. Le démarrage est donc repoussé
+     * après le chargement du FXML, une fois le listener en place.
      */
     private void ensureSyncService() {
         if (syncService == null) {
             syncService = new SyncService(appContext.getSyncApiClient());
-            syncService.start();
         }
     }
 
