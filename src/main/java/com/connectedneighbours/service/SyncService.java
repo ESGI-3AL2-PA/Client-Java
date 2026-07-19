@@ -198,6 +198,13 @@ public class SyncService {
             // relancer un login. Le planificateur, lui, continue de battre.
             notifyStatus(SyncStatus.AUTH_REQUIRED);
         } catch (ApiException e) {
+            // Tracer le corps renvoyé par l'api : un 400 de validation n'est
+            // visible que là, et sans lui le cycle échoue en boucle sans jamais
+            // dire pourquoi.
+            if (e.getStatusCode() != 401) {
+                LOGGER.log(Level.WARNING, "Cycle de synchronisation refusé par l''api (HTTP {0}) : {1}",
+                        new Object[]{e.getStatusCode(), e.getMessage()});
+            }
             notifyStatus(e.getStatusCode() == 401 ? SyncStatus.AUTH_REQUIRED : SyncStatus.ERROR);
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Cycle de synchronisation en échec", e);
