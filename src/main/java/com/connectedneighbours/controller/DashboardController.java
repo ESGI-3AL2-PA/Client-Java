@@ -123,9 +123,9 @@ public class DashboardController extends BaseController {
                 }
                 setText(item);
                 setStyle(switch (item) {
-                    case "OPEN" -> "-fx-text-fill: #e74c3c; -fx-font-weight: bold;";
-                    case "IN_PROGRESS" -> "-fx-text-fill: #f39c12; -fx-font-weight: bold;";
-                    case "RESOLVED" -> "-fx-text-fill: #27ae60; -fx-font-weight: bold;";
+                    case "open" -> "-fx-text-fill: #e74c3c; -fx-font-weight: bold;";
+                    case "in_progress" -> "-fx-text-fill: #f39c12; -fx-font-weight: bold;";
+                    case "resolved" -> "-fx-text-fill: #27ae60; -fx-font-weight: bold;";
                     default -> "";
                 });
             }
