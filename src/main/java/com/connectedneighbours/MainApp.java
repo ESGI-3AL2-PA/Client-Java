@@ -10,6 +10,7 @@ import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.plugin.PluginManager;
 import com.connectedneighbours.repository.DatabaseManager;
+import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.theme.ThemeManager;
 import com.connectedneighbours.util.DatabaseUtil;
@@ -57,7 +58,7 @@ public class MainApp extends Application {
             restored = null;
         }
         if (restored != null && hasLocalData()) {
-            appContext.setCurrentUser(restored);
+            onAuthenticated(restored);
             showDashboard();
             return;
         }
@@ -75,7 +76,7 @@ public class MainApp extends Application {
         };
         login.setOnSucceeded(e -> {
             User user = login.getValue();
-            appContext.setCurrentUser(user);
+            onAuthenticated(user);
             SessionConfig.saveLastUser(user);
             showDashboard();
         });
@@ -88,6 +89,16 @@ public class MainApp extends Application {
         Thread t = new Thread(login, "sso-browser-login");
         t.setDaemon(true);
         t.start();
+    }
+
+    /**
+     * Installe l'utilisateur et son périmètre quartier. Les quartiers sont lus en
+     * base locale, pas via l'api : ce chemin est aussi emprunté au démarrage
+     * offline-first, où aucun appel réseau n'est possible.
+     */
+    private void onAuthenticated(User user) {
+        appContext.setCurrentUser(user);
+        appContext.initDistrictScope(new DistrictRepository().findAll());
     }
 
     private boolean hasLocalData() {
@@ -239,12 +250,20 @@ public class MainApp extends Application {
     }
 
     /**
-     * Relance le login navigateur (utilisé par le bouton Déconnexion et en
-     * cas d'expiration du token). Le navigateur tentera le refresh silencieux
-     * si le cookie refresh est encore valide (≤7j) — pas de mot de passe à
-     * retaper dans ce cas.
+     * Relance le login navigateur après expiration du token : le refresh silencieux
+     * est souhaitable ici, l'opérateur n'a pas demandé à changer de compte.
      */
     public void backToLogin() {
+        backToLogin(false);
+    }
+
+    /**
+     * @param forceReauth {@code true} depuis le bouton Déconnexion. La session vit
+     *                    dans le cookie du navigateur, que le client Java ne peut pas
+     *                    effacer : sans {@code prompt=login}, l'authorize rend
+     *                    immédiatement un code pour le même compte.
+     */
+    public void backToLogin(boolean forceReauth) {
         if (syncService != null) {
             syncService.stop();
             syncService = null;
@@ -257,12 +276,12 @@ public class MainApp extends Application {
         Task<User> login = new Task<>() {
             @Override
             protected User call() throws Exception {
-                return appContext.getAuthService().loginViaBrowser();
+                return appContext.getAuthService().loginViaBrowser(forceReauth);
             }
         };
         login.setOnSucceeded(e -> {
             User user = login.getValue();
-            appContext.setCurrentUser(user);
+            onAuthenticated(user);
             SessionConfig.saveLastUser(user);
             showDashboard();
         });

@@ -52,6 +52,17 @@ public class IncidentService {
         return repository.findAll();
     }
 
+    /**
+     * Incidents du quartier demandé, ou tous si {@code districtId} est {@code null}.
+     * <p>
+     * Filtre d'affichage : la base locale d'un superAdmin contient tous les
+     * quartiers (le flux de sync n'est pas restreint pour ce rôle), il faut donc
+     * trancher ici ce que l'écran montre.
+     */
+    public List<Incident> getIncidentsByDistrict(String districtId) {
+        return districtId == null ? repository.findAll() : repository.findByDistrictId(districtId);
+    }
+
     public Optional<Incident> getIncidentById(String id) {
         return repository.findById(id);
     }
@@ -95,6 +106,16 @@ public class IncidentService {
      * @throws IllegalArgumentException si catégorie ou description est vide
      */
     public Incident createIncident(String category, String description, String reporterId) {
+        return createIncident(category, description, reporterId, null);
+    }
+
+    /**
+     * @param districtId quartier de rattachement. Sans lui l'incident n'apparaît
+     *                   sous aucune sélection de quartier et le serveur refuse le
+     *                   push en {@code out-of-district} : c'est un enregistrement
+     *                   perdu des deux côtés.
+     */
+    public Incident createIncident(String category, String description, String reporterId, String districtId) {
         if (category == null || category.isBlank()) {
             throw new IllegalArgumentException("La catégorie est obligatoire.");
         }
@@ -107,7 +128,7 @@ public class IncidentService {
         incident.setCategory(category.trim());
         incident.setDescription(description.trim());
         incident.setReporterId(reporterId != null ? reporterId : "unknown");
-        incident.setDistrictId("");
+        incident.setDistrictId(districtId != null ? districtId : "");
         incident.setStatus(Incident.Status.OPEN.getValue());
         incident.setSynced(false);
         incident.setCreatedAt(LocalDateTime.now());

@@ -3,6 +3,7 @@ package com.connectedneighbours.service;
 import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.Statistic;
+import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.StatisticRepository;
 import com.connectedneighbours.repository.SyncApiClient;
@@ -14,8 +15,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,9 +38,12 @@ import java.util.logging.Logger;
  * simplement la mesure du jour absente, sans faire échouer les autres
  * métriques.</p>
  *
- * <p>Ce sont des statistiques <em>de quartier</em> : le flux étant limité au
- * quartier de l'appelant (§5.5), la base locale ne contient que celui-ci — ce
- * qui correspond à ce que le même admin voit sur le web.</p>
+ * <p>Les métriques portent une dimension quartier. Un admin ne reçoit que le
+ * sien (§5.5) et n'y voit donc rien de neuf ; un superAdmin reçoit tous les
+ * quartiers, et c'est cette dimension qui permet à l'écran de suivre le
+ * sélecteur plutôt que d'afficher un total inter-quartiers. Les totaux distants
+ * ci-dessus, eux, ne sont pas filtrables : ils ne sont écrits que dans la série
+ * agrégée ({@code districtId} nul).</p>
  */
 public class StatisticsService {
 
@@ -65,14 +71,52 @@ public class StatisticsService {
 
     /**
      * Recalcule et enregistre les métriques du jour.
+     * <p>
+     * Une série par quartier présent en base, plus une série {@code null}
+     * tous-quartiers confondus. Chez un admin la base ne contient que son
+     * quartier, les deux séries coïncident donc ; chez un superAdmin, dont la
+     * base porte tous les quartiers, c'est ce qui permet à l'écran de suivre le
+     * sélecteur au lieu d'agréger un total qui ne veut rien dire.
      */
     public void recompute() {
         String period = LocalDate.now().format(PERIOD_FMT);
         List<Incident> incidents = incidentRepo.findAll();
+        List<User> users = userRepo.findAll();
 
+        recomputeScope(period, null, incidents, users);
+
+        for (String districtId : districtsPresentIn(incidents, users)) {
+            recomputeScope(
+                    period,
+                    districtId,
+                    incidents.stream().filter(i -> districtId.equals(i.getDistrictId())).toList(),
+                    users.stream().filter(u -> districtId.equals(u.getDistrictId())).toList()
+            );
+        }
+    }
+
+    /**
+     * Quartiers à mesurer. Un quartier n'ayant plus ni incident ni habitant
+     * n'est pas recalculé : son historique reste tel quel plutôt que d'être
+     * réécrit à zéro, ce qui se lirait comme une chute réelle.
+     */
+    private Set<String> districtsPresentIn(List<Incident> incidents, List<User> users) {
+        Set<String> districtIds = new LinkedHashSet<>();
+        incidents.forEach(i -> addIfPresent(districtIds, i.getDistrictId()));
+        users.forEach(u -> addIfPresent(districtIds, u.getDistrictId()));
+        return districtIds;
+    }
+
+    private void addIfPresent(Set<String> target, String districtId) {
+        if (districtId != null && !districtId.isBlank()) {
+            target.add(districtId);
+        }
+    }
+
+    private void recomputeScope(String period, String districtId, List<Incident> incidents, List<User> users) {
         Map<String, Double> metrics = new LinkedHashMap<>();
         metrics.put("incidents.total", (double) incidents.size());
-        metrics.put("users.total", (double) userRepo.findAll().size());
+        metrics.put("users.total", (double) users.size());
 
         Map<String, Double> byStatus = new LinkedHashMap<>();
         Map<String, Double> byCategory = new LinkedHashMap<>();
@@ -83,11 +127,17 @@ public class StatisticsService {
         byStatus.forEach((status, count) -> metrics.put("incidents.status." + status, count));
         byCategory.forEach((category, count) -> metrics.put("incidents.category." + category, count));
 
-        fetchRemoteTotal(metrics, "/listings?page=1&limit=1", "listings.total");
-        fetchRemoteTotal(metrics, "/events?page=1&limit=1", "events.total");
-        fetchRemoteTotal(metrics, "/votes?page=1&limit=1", "votes.total");
+        // Les totaux distants ne portent pas de quartier : les endpoints sont
+        // interrogés sans filtre. Ils n'appartiennent donc qu'à la série agrégée —
+        // les rattacher à chaque quartier ferait revendiquer le total global par
+        // tous, ce qui est faux dès qu'il y a plus d'un quartier.
+        if (districtId == null) {
+            fetchRemoteTotal(metrics, "/listings?page=1&limit=1", "listings.total");
+            fetchRemoteTotal(metrics, "/events?page=1&limit=1", "events.total");
+            fetchRemoteTotal(metrics, "/votes?page=1&limit=1", "votes.total");
+        }
 
-        metrics.forEach((key, value) -> upsert(key, value, period));
+        metrics.forEach((key, value) -> upsert(key, value, period, districtId));
     }
 
     /**
@@ -112,13 +162,14 @@ public class StatisticsService {
     }
 
     /**
-     * Une seule mesure par (métrique, période) : la journée en cours est
-     * réécrite, les jours passés restent pour la tendance.
+     * Une seule mesure par (métrique, période, quartier) : la journée en cours
+     * est réécrite, les jours passés restent pour la tendance.
      */
-    private void upsert(String metricKey, double value, String period) {
-        List<Statistic> existing = statisticRepo.findByMetricKeyAndPeriod(metricKey, period);
+    private void upsert(String metricKey, double value, String period, String districtId) {
+        List<Statistic> existing =
+                statisticRepo.findByMetricKeyAndPeriodAndDistrict(metricKey, period, districtId);
         if (existing.isEmpty()) {
-            statisticRepo.save(new Statistic(metricKey, value, period));
+            statisticRepo.save(new Statistic(metricKey, value, period, districtId));
             return;
         }
         Statistic statistic = existing.get(0);

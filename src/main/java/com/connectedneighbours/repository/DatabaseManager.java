@@ -120,6 +120,15 @@ public class DatabaseManager {
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_mongo_id ON users(mongo_id)",
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_incidents_mongo_id ON incidents(mongo_id)",
             "CREATE UNIQUE INDEX IF NOT EXISTS uq_districts_mongo_id ON districts(mongo_id)",
+            // Dimension quartier des statistiques. La base d'un superAdmin contient
+            // tous les quartiers : sans cette colonne, une métrique agrège tout et
+            // ne veut plus rien dire une fois le sélecteur en place.
+            // NULL = agrégat tous quartiers confondus.
+            "ALTER TABLE statistics ADD COLUMN IF NOT EXISTS districtId VARCHAR(36)",
+            // Une métrique est identifiée par (clé, période, quartier) : l'upsert
+            // doit pouvoir distinguer deux quartiers sur la même clé et le même jour.
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_statistics_key_period_district "
+                    + "ON statistics(metric_key, period, districtId)",
     };
     private static Connection connection;
 

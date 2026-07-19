@@ -26,6 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -96,6 +97,15 @@ public class SyncService {
     private Consumer<List<String>> rejectionListener;
 
     private volatile int pendingConflictCount;
+
+    /**
+     * Dernier statut poussé. Le service survit aux changements d'écran, pas les
+     * contrôleurs : sans cette valeur, un contrôleur fraîchement construit n'a
+     * rien à afficher avant le prochain tick (30 s) et retombe sur le défaut
+     * « Hors-ligne » du FXML, qui est faux.
+     */
+    private volatile SyncStatus lastStatus;
+    private volatile LocalDateTime lastSyncAt;
 
     public SyncService(SyncApiClient apiClient) {
         this(
@@ -443,6 +453,10 @@ public class SyncService {
     //  Notifications UI
 
     private void notifyStatus(SyncStatus status) {
+        lastStatus = status;
+        if (status == SyncStatus.SUCCESS) {
+            lastSyncAt = LocalDateTime.now();
+        }
         if (statusListener != null) {
             uiExecutor.execute(() -> statusListener.onStatusChanged(status));
         }
@@ -483,5 +497,21 @@ public class SyncService {
 
     public int getPendingConflictCount() {
         return pendingConflictCount;
+    }
+
+    /**
+     * Dernier statut connu, ou {@code null} si aucun cycle n'a encore abouti.
+     * Permet à un contrôleur reconstruit après une navigation de réafficher
+     * l'état réel sans attendre le prochain tick.
+     */
+    public SyncStatus getLastStatus() {
+        return lastStatus;
+    }
+
+    /**
+     * Horodatage de la dernière synchronisation réussie, ou {@code null}.
+     */
+    public LocalDateTime getLastSyncAt() {
+        return lastSyncAt;
     }
 }

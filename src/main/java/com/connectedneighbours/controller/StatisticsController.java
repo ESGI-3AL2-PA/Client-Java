@@ -18,11 +18,19 @@ import java.util.*;
  * chaque cycle de synchronisation (incidents/utilisateurs depuis H2,
  * annonces/événements/votes depuis l'api).
  *
- * <p>Ce sont des statistiques <em>de quartier</em> : la base locale ne reçoit
- * que le quartier de l'opérateur (§5.5 du design offline-sync).</p>
+ * <p>Ce sont des statistiques <em>de quartier</em> : l'écran lit la série du
+ * quartier sélectionné dans le header. Un admin n'en a qu'un ; un superAdmin
+ * reçoit tous les quartiers et voit donc les chiffres suivre son sélecteur.</p>
+ *
+ * <p>Annonces, événements et votes viennent d'endpoints api non filtrables par
+ * quartier : ils ne sont écrits que dans la série agrégée. Ils n'apparaissent
+ * donc qu'en vue « tous les quartiers », et restent vides sur un quartier
+ * précis — un total global affiché sous un quartier serait faux.</p>
  */
 public class StatisticsController {
     private final StatisticRepository statisticRepo = new StatisticRepository();
+    /** Quartier consulté ; {@code null} = série tous quartiers confondus. */
+    private final String districtId;
     @FXML
     private Label statUsersTotal;
     @FXML
@@ -48,9 +56,17 @@ public class StatisticsController {
     @FXML
     private PieChart incidentsByCategoryChart;
 
+    public StatisticsController() {
+        this(null);
+    }
+
+    public StatisticsController(String districtId) {
+        this.districtId = districtId;
+    }
+
     @FXML
     public void initialize() {
-        List<Statistic> all = statisticRepo.findAll();
+        List<Statistic> all = statisticRepo.findByDistrictId(districtId);
         Map<String, List<Statistic>> history = historyByMetricKey(all);
 
         setTotal(statUsersTotal, statUsersTrend, history.get("users.total"));

@@ -101,6 +101,19 @@ public class SsoAuthService {
      * @return l'utilisateur authentifié (fetch depuis /auth/userinfo)
      */
     public User loginViaBrowser() throws IOException {
+        return loginViaBrowser(false);
+    }
+
+    /**
+     * Variante explicite du login navigateur.
+     *
+     * @param forceReauth {@code true} pour exiger une ré-authentification même si le
+     *                    cookie refresh du navigateur est encore valide. Indispensable
+     *                    après une déconnexion : sans cela l'authorize rend un code
+     *                    pour le même compte dans la milliseconde, et changer
+     *                    d'utilisateur devient impossible.
+     */
+    public User loginViaBrowser(boolean forceReauth) throws IOException {
         PkceChallenge pkce = PkceChallenge.generate();
         String state = PkceChallenge.randomState();
 
@@ -109,7 +122,7 @@ public class SsoAuthService {
             server.start();
 
             String redirectUri = server.getCallbackUrl();
-            openBrowser(buildAuthorizeUrl(redirectUri, state, pkce.challenge()));
+            openBrowser(buildAuthorizeUrl(redirectUri, state, pkce.challenge(), forceReauth));
 
             // Le navigateur ne rapporte qu'un code : le token, lui, ne transite
             // que par l'échange direct ci-dessous.
@@ -145,14 +158,15 @@ public class SsoAuthService {
         return java.net.URLEncoder.encode(raw, java.nio.charset.StandardCharsets.UTF_8);
     }
 
-    private String buildAuthorizeUrl(String redirectUri, String state, String codeChallenge) {
+    String buildAuthorizeUrl(String redirectUri, String state, String codeChallenge, boolean forceReauth) {
         return AuthConfig.getAuthorizeUrl()
                 + "?response_type=code"
                 + "&client_id=" + enc(AuthConfig.CLIENT_ID)
                 + "&redirect_uri=" + enc(redirectUri)
                 + "&state=" + enc(state)
                 + "&code_challenge=" + enc(codeChallenge)
-                + "&code_challenge_method=S256";
+                + "&code_challenge_method=S256"
+                + (forceReauth ? "&prompt=login" : "");
     }
 
     /**

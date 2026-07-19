@@ -4,8 +4,11 @@ import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.service.ConflictService;
 import com.connectedneighbours.i18n.I18nManager;
+import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.service.SyncStatus;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -50,6 +53,12 @@ public class BaseController {
     protected SyncService syncService;
 
     protected boolean reloginRequested = false;
+
+    /**
+     * Seule référence forte au listener de quartier : l'abonnement est faible, donc
+     * il vit exactement aussi longtemps que ce contrôleur — ni plus, ni moins.
+     */
+    private ChangeListener<String> districtListener;
 
     public BaseController() {
     }
@@ -96,7 +105,26 @@ public class BaseController {
             syncService.setStatusListener(this::updateSyncUI);
             syncService.setConflictListener(this::showConflictBadge);
             syncService.setRejectionListener(this::showRejections);
+            restoreSyncUI();
         }
+    }
+
+    /**
+     * Réaffiche l'état de synchronisation déjà connu du service. Une navigation
+     * reconstruit la scène entière : sans cette restauration, l'écran repart du
+     * défaut FXML et annonce « Hors-ligne » jusqu'au prochain tick, badge de
+     * conflits et date de dernière sync perdus au passage.
+     */
+    private void restoreSyncUI() {
+        SyncStatus known = syncService.getLastStatus();
+        if (known != null) {
+            renderSyncStatus(known);
+        }
+        if (lastSyncLabel != null && syncService.getLastSyncAt() != null) {
+            lastSyncLabel.setText(
+                    I18nManager.tr("common.sync.lastSync", syncService.getLastSyncAt().format(DATE_FMT)));
+        }
+        showConflictBadge(syncService.getPendingConflictCount());
     }
 
     /**
@@ -205,35 +233,72 @@ public class BaseController {
      * @param status le statut de synchronisation courant
      */
     protected final void updateSyncUI(SyncStatus status) {
+        renderSyncStatus(status);
         switch (status) {
-            case OFFLINE -> {
-                syncStatusLabel.setText(I18nManager.tr("common.sync.offline"));
-                syncStatusDot.setFill(Color.GRAY);
-                syncNowButton.setDisable(false);
-            }
-            case SYNCING -> {
-                syncStatusLabel.setText(I18nManager.tr("common.sync.syncing"));
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-            }
             case SUCCESS -> {
-                syncStatusLabel.setText(I18nManager.tr("common.sync.success"));
-                syncStatusDot.setFill(Color.GREEN);
-                syncNowButton.setDisable(false);
-                lastSyncLabel.setText(I18nManager.tr("common.sync.lastSync", LocalDateTime.now().format(DATE_FMT)));
+                if (lastSyncLabel != null) {
+                    lastSyncLabel.setText(
+                            I18nManager.tr("common.sync.lastSync", LocalDateTime.now().format(DATE_FMT)));
+                }
+                refreshDistrictScope();
                 onSyncSuccess();
             }
+            case AUTH_REQUIRED -> triggerRelogin();
+            default -> {
+            }
+        }
+    }
+
+    /**
+     * Peint la barre de synchronisation, sans effet de bord. Séparé de
+     * {@link #updateSyncUI(SyncStatus)} pour que la restauration après une
+     * navigation puisse réafficher l'état sans relancer un {@code loadData()}
+     * ni un re-login.
+     * <p>
+     * Les champs sont testés : tous les écrans n'embarquent pas la barre de sync.
+     */
+    private void renderSyncStatus(SyncStatus status) {
+        String text;
+        Color color;
+        boolean syncDisabled;
+        switch (status) {
+            case OFFLINE -> {
+                text = I18nManager.tr("common.sync.offline");
+                color = Color.GRAY;
+                syncDisabled = false;
+            }
+            case SYNCING -> {
+                text = I18nManager.tr("common.sync.syncing");
+                color = Color.ORANGE;
+                syncDisabled = true;
+            }
+            case SUCCESS -> {
+                text = I18nManager.tr("common.sync.success");
+                color = Color.GREEN;
+                syncDisabled = false;
+            }
             case ERROR -> {
-                syncStatusLabel.setText(I18nManager.tr("common.sync.error"));
-                syncStatusDot.setFill(Color.RED);
-                syncNowButton.setDisable(false);
+                text = I18nManager.tr("common.sync.error");
+                color = Color.RED;
+                syncDisabled = false;
             }
             case AUTH_REQUIRED -> {
-                syncStatusLabel.setText(I18nManager.tr("common.sync.authRequired"));
-                syncStatusDot.setFill(Color.ORANGE);
-                syncNowButton.setDisable(true);
-                triggerRelogin();
+                text = I18nManager.tr("common.sync.authRequired");
+                color = Color.ORANGE;
+                syncDisabled = true;
             }
+            default -> {
+                return;
+            }
+        }
+        if (syncStatusLabel != null) {
+            syncStatusLabel.setText(text);
+        }
+        if (syncStatusDot != null) {
+            syncStatusDot.setFill(color);
+        }
+        if (syncNowButton != null) {
+            syncNowButton.setDisable(syncDisabled);
         }
     }
 
@@ -247,11 +312,55 @@ public class BaseController {
     }
 
     /**
+     * S'abonne aux changements de quartier. À appeler dans {@code initialize()}
+     * des écrans dont les données sont scopées.
+     * <p>
+     * Listener faible : l'{@link AppContext} survit aux navigations, alors que les
+     * contrôleurs sont jetés à chaque changement d'écran. Une référence forte les
+     * maintiendrait tous en vie et rejouerait {@code onDistrictChanged()} sur des
+     * écrans qui ne sont plus affichés.
+     */
+    protected void setupDistrictScope() {
+        if (appContext == null) return;
+        districtListener = (obs, old, current) -> onDistrictChanged();
+        appContext.activeDistrictIdProperty().addListener(new WeakChangeListener<>(districtListener));
+        // La première sync se termine souvent avant que cet écran n'existe : son
+        // SUCCESS est alors seulement restauré (sans effet de bord), et attendre le
+        // tick suivant laisserait le sélecteur masqué jusqu'à 30 s.
+        refreshDistrictScope();
+    }
+
+    /**
+     * Hook appelé quand le quartier consulté change. Implémentation par défaut :
+     * ne rien faire.
+     */
+    protected void onDistrictChanged() {
+        // no-op par défaut
+    }
+
+    /**
+     * Réaligne le périmètre sur les quartiers désormais présents en base.
+     * <p>
+     * À la première connexion sur une installation neuve, la base locale est vide
+     * au moment du login : sans ce rejeu après la première sync, le sélecteur
+     * resterait masqué (et le badge d'un admin vide) jusqu'au prochain démarrage.
+     * L'en-tête n'est reconstruit que si la liste a réellement changé.
+     */
+    private void refreshDistrictScope() {
+        if (appContext == null) return;
+        boolean changed = appContext.initDistrictScope(new DistrictRepository().findAll());
+        if (changed && headerController != null) {
+            headerController.setupDistrictScope();
+        }
+    }
+
+    /**
      * Déclenche le re-login navigateur via {@link MainApp#backToLogin()}.
      * Protégé par {@link #reloginRequested} pour éviter les appels multiples.
      */
     protected void triggerRelogin() {
         if (reloginRequested) return;
+        if (syncNowButton == null || syncNowButton.getScene() == null) return;
         reloginRequested = true;
         Stage stage = (Stage) syncNowButton.getScene().getWindow();
         Object mainApp = stage.getUserData();

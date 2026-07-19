@@ -35,6 +35,9 @@ import java.util.List;
 
 public class DashboardController extends BaseController {
 
+    /** Fenêtre de la carte « Résolus (30j) », conforme à son libellé. */
+    private static final int RESOLVED_WINDOW_DAYS = 30;
+
     //  Cartes de stats
     @FXML
     private Label statOpenIncidents;
@@ -91,11 +94,17 @@ public class DashboardController extends BaseController {
         setupTable();
         loadData();
         setupSync();
+        setupDistrictScope();
         setupHeader(Page.DASHBOARD);
     }
 
     @Override
     protected void onSyncSuccess() {
+        loadData();
+    }
+
+    @Override
+    protected void onDistrictChanged() {
         loadData();
     }
 
@@ -152,12 +161,16 @@ public class DashboardController extends BaseController {
     //  Chargement des données depuis H2 
     private void loadData() {
         try {
-            List<Incident> incidents = incidentRepo.findAll();
+            // Une seule lecture, filtrée sur le quartier consulté : les compteurs sont
+            // dérivés de cette liste plutôt que de COUNT() séparés, sinon les cartes et
+            // le tableau « incidents récents » peuvent se contredire.
+            List<Incident> incidents = incidentService.getIncidentsByDistrict(
+                    appContext != null ? appContext.getActiveDistrictId() : null);
 
-            int open = incidentRepo.countByStatus(Incident.Status.OPEN.getValue());
-            int inProgress = incidentRepo.countByStatus(Incident.Status.IN_PROGRESS.getValue());
-            int resolved = incidentRepo.countByStatus(Incident.Status.RESOLVED.getValue());
-            int unsynced = incidentRepo.countUnsynced();
+            int open = countByStatus(incidents, Incident.Status.OPEN);
+            int inProgress = countByStatus(incidents, Incident.Status.IN_PROGRESS);
+            int resolved = countResolvedSince(incidents, LocalDateTime.now().minusDays(RESOLVED_WINDOW_DAYS));
+            int unsynced = (int) incidents.stream().filter(i -> !i.isSynced()).count();
 
             statOpenIncidents.setText(String.valueOf(open));
             statInProgress.setText(String.valueOf(inProgress));
@@ -188,7 +201,30 @@ public class DashboardController extends BaseController {
         }
     }
 
-    //  Chargement des alertes 
+    static int countByStatus(List<Incident> incidents, Incident.Status status) {
+        return (int) incidents.stream()
+                .filter(i -> status.getValue().equals(i.getStatus()))
+                .count();
+    }
+
+    /**
+     * Incidents résolus depuis {@code since}.
+     * <p>
+     * {@code updatedAt} sert d'approximation de la date de résolution : le modèle
+     * ne porte pas de {@code resolvedAt}, et la dernière écriture d'un incident
+     * résolu est sa résolution. Conséquence assumée : rouvrir puis re-résoudre, ou
+     * simplement éditer un vieil incident résolu, le ramène dans la fenêtre. Une
+     * mesure exacte demanderait un champ dédié, donc une migration et un changement
+     * serveur.
+     */
+    static int countResolvedSince(List<Incident> incidents, LocalDateTime since) {
+        return (int) incidents.stream()
+                .filter(i -> Incident.Status.RESOLVED.getValue().equals(i.getStatus()))
+                .filter(i -> i.getUpdatedAt() != null && i.getUpdatedAt().isAfter(since))
+                .count();
+    }
+
+    //  Chargement des alertes
     private void loadAlerts() throws SQLException {
         alertsContainer.getChildren().clear();
 
@@ -251,7 +287,12 @@ public class DashboardController extends BaseController {
 
     @FXML
     public void onExportClick() {
-        List<Statistic> stats = new StatisticRepository().findAll();
+        // Convention volontairement différente de getIncidentsByDistrict(null), qui
+        // rend tout : ici null cible la série districtId IS NULL, que
+        // StatisticsService.recompute() écrit justement comme l'agrégat tous
+        // quartiers. Les deux sont corrects pour leurs données — ne pas « unifier ».
+        List<Statistic> stats = new StatisticRepository()
+                .findByDistrictId(appContext != null ? appContext.getActiveDistrictId() : null);
 
         if(stats.isEmpty()) {
             showError(I18nManager.tr("dashboard.export.empty"));

@@ -17,6 +17,13 @@
     <Label fx:id="currentUserLabel" text=""
            style="-fx-font-size: 12px;" styleClass="text-faint"/>
 
+    <!-- Périmètre quartier : sélecteur pour un superAdmin, badge figé sinon.
+         Les deux sont masqués tant que HeaderController n'a pas résolu le rôle. -->
+    <ComboBox fx:id="districtSelector" visible="false" managed="false"
+              promptText="%header.district.prompt" styleClass="district-selector"/>
+    <Label fx:id="districtBadge" visible="false" managed="false"
+           styleClass="accent-badge"/>
+
     <!-- Spacer -->
     <Region HBox.hgrow="ALWAYS"/>
 

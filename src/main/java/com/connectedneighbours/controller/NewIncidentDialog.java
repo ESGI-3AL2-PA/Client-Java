@@ -1,7 +1,9 @@
 package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.Incident;
+import com.connectedneighbours.model.User;
 import com.connectedneighbours.service.IncidentService;
 import com.connectedneighbours.theme.ThemeManager;
 import javafx.geometry.Insets;
@@ -82,11 +84,19 @@ final class NewIncidentDialog {
             if (bt != createType) return null;
             String reporterId = appContext != null && appContext.getCurrentUser() != null
                     ? appContext.getCurrentUser().getId() : "admin";
+            String districtId = resolveDistrictId(appContext);
+            if (districtId == null) {
+                // Un incident sans quartier est refusé au push (out-of-district) et
+                // n'apparaît sous aucune sélection : mieux vaut ne pas le créer.
+                showError(I18nManager.tr("incidents.newDialog.error.noDistrict"));
+                return null;
+            }
             try {
                 return incidentService.createIncident(
                         categoryField.getText().trim(),
                         descriptionField.getText().trim(),
-                        reporterId
+                        reporterId,
+                        districtId
                 );
             } catch (Exception e) {
                 showError("Erreur de création : " + e.getMessage());
@@ -98,6 +108,20 @@ final class NewIncidentDialog {
         dialog.setOnShown(e -> ThemeManager.applyTheme(dialog.getDialogPane().getScene()));
 
         return dialog.showAndWait().filter(incident -> incident != null);
+    }
+
+    /**
+     * Quartier à rattacher : celui consulté, sinon celui que l'opérateur
+     * administre. {@code null} si aucun des deux — cas du superAdmin en vue
+     * « tous les quartiers », où il n'y a rien à déduire.
+     */
+    private static String resolveDistrictId(AppContext appContext) {
+        if (appContext == null) return null;
+        String active = appContext.getActiveDistrictId();
+        if (active != null && !active.isBlank()) return active;
+        User current = appContext.getCurrentUser();
+        String administered = current != null ? current.getAdminDistrictId() : null;
+        return administered != null && !administered.isBlank() ? administered : null;
     }
 
     private static void showError(String msg) {

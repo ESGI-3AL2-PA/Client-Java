@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -131,6 +132,36 @@ class SyncServiceTest {
 
         assertEquals(List.of(SyncStatus.OFFLINE), statuses);
         verifyNoInteractions(apiClient, pendingRepo);
+    }
+
+    @Test
+    void getLastStatus_isNullBeforeAnyCycle() {
+        assertNull(onlineService().getLastStatus());
+    }
+
+    /**
+     * Une navigation reconstruit le contrôleur mais pas le service : sans statut
+     * retenu, le nouvel écran repart du défaut FXML et annonce « Hors-ligne » à tort.
+     */
+    @Test
+    void getLastStatus_retainsLastPushedStatus() throws Exception {
+        when(pendingRepo.findBatch(anyInt())).thenReturn(List.of());
+        when(apiClient.changes(anyLong(), anyInt())).thenReturn(List.of());
+
+        SyncService service = onlineService();
+        service.syncCycle();
+
+        assertEquals(SyncStatus.SUCCESS, service.getLastStatus());
+        assertNotNull(service.getLastSyncAt());
+    }
+
+    @Test
+    void getLastSyncAt_staysNullWhenOffline() {
+        SyncService service = service(() -> false);
+        service.syncCycle();
+
+        assertEquals(SyncStatus.OFFLINE, service.getLastStatus());
+        assertNull(service.getLastSyncAt());
     }
 
     @Test
