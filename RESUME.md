@@ -233,8 +233,7 @@ src/main/resources/
 - ✅ `Page.java` — enum DASHBOARD/INCIDENTS/USERS/STATISTICS/SETTINGS
 - ✅ `HeaderController.java` (215 lignes) — navigation toutes pages, ouverture modale statistiques/paramètres
 - ✅ **Tâche 19** — `I18nManager.java` + `Language.java` (pattern `Preferences` calqué sur
-  `ThemeManager`/`Theme`) + `messages_fr.properties`/`messages_en.properties` remplis (FR/EN uniquement,
-  l'espagnol est hors périmètre — `messages_es.properties` reste vide). Tous les FXML, contrôleurs et les 2
+  `ThemeManager`/`Theme`) + `messages_fr.properties`/`messages_en.properties` remplis FR/EN. Tous les FXML, contrôleurs et les 2
   plugins JavaFX (`SocialAnalysisPlugin`, `LocalCalendarPlugin`) sont traduits. `ComboBox<Language>` dans
   `settings.fxml` + `SettingsController.onApplyLanguageClick()` : changement de langue à chaud qui recharge
   l'écran propriétaire (`MainApp.reloadCurrentScreen()`, nouveau champ `currentPage`) et reconstruit la

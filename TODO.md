@@ -104,8 +104,7 @@
 ## 🌍 Internationalisation
 
 - [x] **`I18nManager`** (tâche 19) — `i18n/I18nManager.java` + `i18n/Language.java` implémentés (pattern
-  `Preferences` calqué sur `ThemeManager`/`Theme`). **FR et EN uniquement** (l'espagnol a été exclu du
-  périmètre à la demande explicite ; `messages_es.properties` reste vide, à traiter séparément si besoin).
+  `Preferences` calqué sur `ThemeManager`/`Theme`). **FR et EN.
     - `messages_fr.properties` et `messages_en.properties` remplis avec toutes les clés utilisées dans les 5
       FXML, les 6 contrôleurs, `BaseController`, `MainApp`, et les 2 plugins JavaFX (`SocialAnalysisPlugin`,
       `LocalCalendarPlugin` — UI 100% Java, appels directs à `I18nManager.tr(...)`).
