@@ -14,6 +14,13 @@ import java.util.Map;
  * <p>{@code baseUpdatedAt} n'est envoyé que pour UPDATE/DELETE : c'est le
  * jeton de concurrence optimiste. {@code data} est {@code null} pour un
  * DELETE.</p>
+ *
+ * <p>L'inclusion est réglée champ par champ parce que le schéma de l'api
+ * distingue deux choses que Jackson confond : {@code mongoId} et {@code data}
+ * sont <em>nullable</em> (la clé doit être présente, la valeur peut être
+ * {@code null}), tandis que {@code baseUpdatedAt} est <em>optional</em> (la clé
+ * peut manquer, mais un {@code null} explicite est refusé). Le NON_NULL global
+ * omettait {@code mongoId} sur un INSERT, ce que l'api rejetait en 400.</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IngestEvent {
@@ -21,7 +28,11 @@ public class IngestEvent {
     private long id;
     private String entity;
     private String operation;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private String mongoId;
+
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     private Map<String, Object> data;
     private String occurredAt;
     private String baseUpdatedAt;
