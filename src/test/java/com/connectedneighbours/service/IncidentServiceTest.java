@@ -31,6 +31,27 @@ class IncidentServiceTest {
     }
 
     /**
+     * Convention inverse de {@code StatisticRepository.findByDistrictId(null)}, qui
+     * cible la série {@code districtId IS NULL}. Les deux sont corrects pour leurs
+     * données — ce test épingle la différence pour qu'on ne les « unifie » pas.
+     */
+    @Test
+    void getIncidentsByDistrict_nullMeansEveryDistrict() {
+        service.getIncidentsByDistrict(null);
+
+        verify(repository).findAll();
+        verify(repository, never()).findByDistrictId(anyString());
+    }
+
+    @Test
+    void getIncidentsByDistrict_filtersOnTheGivenDistrict() {
+        service.getIncidentsByDistrict("d1");
+
+        verify(repository).findByDistrictId("d1");
+        verify(repository, never()).findAll();
+    }
+
+    /**
      * Sans quartier l'incident est refusé au push (out-of-district) et n'apparaît
      * sous aucune sélection : il est perdu des deux côtés.
      */
