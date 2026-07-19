@@ -24,7 +24,8 @@ import java.util.prefs.Preferences;
  */
 public class SyncConfig {
 
-    private static final Preferences PREFS = Preferences.userNodeForPackage(SyncConfig.class);
+    private static final Preferences PREFS =
+            Preferences.userNodeForPackage(SyncConfig.class).node(BuildConfig.profile());
 
     private static final String KEY_INSTANCE_ID = "sync.instanceId";
     private static final String KEY_CURSOR = "sync.cursor";

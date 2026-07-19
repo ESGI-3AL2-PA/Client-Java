@@ -22,7 +22,8 @@ import java.util.prefs.Preferences;
  */
 public class SessionConfig {
 
-    private static final Preferences PREFS = Preferences.userNodeForPackage(SessionConfig.class);
+    private static final Preferences PREFS =
+            Preferences.userNodeForPackage(SessionConfig.class).node(BuildConfig.profile());
     private static final ObjectMapper MAPPER = JacksonConfig.get();
 
     private static final String KEY_LAST_USER = "session.lastUser";

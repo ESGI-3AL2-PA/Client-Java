@@ -63,7 +63,8 @@ class SessionConfigTest {
     void loadLastUser_corruptedJson_returnsEmpty() {
         final String keyUser = "session.lastUser";
         final String keyLoginAt = "session.lastLoginAt";
-        java.util.prefs.Preferences prefs = java.util.prefs.Preferences.userNodeForPackage(SessionConfig.class);
+        java.util.prefs.Preferences prefs =
+                java.util.prefs.Preferences.userNodeForPackage(SessionConfig.class).node(BuildConfig.profile());
         prefs.put(keyUser, "{invalid json}}}");
         prefs.put(keyLoginAt, "2025-07-01T12:00:00Z");
 
