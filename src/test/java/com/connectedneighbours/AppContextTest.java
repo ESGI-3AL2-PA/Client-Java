@@ -171,6 +171,74 @@ class AppContextTest {
         assertTrue(SessionConfig.loadActiveDistrictId().isEmpty());
     }
 
+    /**
+     * Première connexion sur une installation neuve : la base locale est vide au
+     * login, les quartiers n'arrivent qu'à la première sync. Sans rejeu, le
+     * sélecteur restait masqué toute la session.
+     */
+    @Test
+    void initDistrictScope_replayedAfterSync_picksUpDistrictsThatArrivedLater() {
+        AppContext context = new AppContext();
+        context.setCurrentUser(scopedUser("superAdmin", null));
+
+        // Vide → vide : rien n'a bougé, l'en-tête n'a pas à être reconstruit.
+        assertFalse(context.initDistrictScope(List.of()));
+        assertTrue(context.getAvailableDistricts().isEmpty());
+
+        // La sync ramène les quartiers : c'est ce passage qui doit réveiller l'UI.
+        assertTrue(context.initDistrictScope(List.of(district("d1", "Centre"))));
+        assertEquals(1, context.getAvailableDistricts().size());
+    }
+
+    /** L'en-tête ne doit être reconstruit que si la liste a bougé. */
+    @Test
+    void initDistrictScope_reportsNoChangeWhenTheListIsIdentical() {
+        AppContext context = new AppContext();
+        context.setCurrentUser(scopedUser("superAdmin", null));
+        List<District> districts = List.of(district("d1", "Centre"), district("d2", "Nord"));
+
+        assertTrue(context.initDistrictScope(districts));
+        assertFalse(context.initDistrictScope(districts));
+        assertFalse(context.initDistrictScope(List.of(district("d1", "Centre"), district("d2", "Nord"))));
+    }
+
+    /** Un quartier ajouté par une sync ultérieure doit être signalé. */
+    @Test
+    void initDistrictScope_reportsChangeWhenADistrictAppears() {
+        AppContext context = new AppContext();
+        context.setCurrentUser(scopedUser("superAdmin", null));
+
+        context.initDistrictScope(List.of(district("d1", "Centre")));
+        assertTrue(context.initDistrictScope(List.of(district("d1", "Centre"), district("d2", "Nord"))));
+    }
+
+    /** Rejouer ne doit pas réinitialiser le quartier choisi par l'opérateur. */
+    @Test
+    void initDistrictScope_replayKeepsTheOperatorSelection() {
+        AppContext context = new AppContext();
+        context.setCurrentUser(scopedUser("superAdmin", null));
+        List<District> districts = List.of(district("d1", "Centre"), district("d2", "Nord"));
+        context.initDistrictScope(districts);
+        context.setActiveDistrictId("d2");
+
+        context.initDistrictScope(districts);
+
+        assertEquals("d2", context.getActiveDistrictId());
+    }
+
+    /** Même problème côté admin : le badge reste vide tant que la sync n'a rien ramené. */
+    @Test
+    void initDistrictScope_replayResolvesTheAdminBadgeName() {
+        AppContext context = new AppContext();
+        context.setCurrentUser(scopedUser("admin", "d2"));
+
+        context.initDistrictScope(List.of());
+        assertTrue(context.getActiveDistrictName().isEmpty());
+
+        context.initDistrictScope(List.of(district("d2", "Nord")));
+        assertEquals("Nord", context.getActiveDistrictName().orElseThrow());
+    }
+
     @Test
     void logout_clearsScopeSoItCannotLeakIntoTheNextSession() {
         AppContext context = new AppContext();

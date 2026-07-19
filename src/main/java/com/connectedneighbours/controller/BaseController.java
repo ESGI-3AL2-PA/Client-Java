@@ -4,6 +4,7 @@ import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.service.ConflictService;
 import com.connectedneighbours.i18n.I18nManager;
+import com.connectedneighbours.repository.DistrictRepository;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.service.SyncStatus;
 import javafx.beans.value.ChangeListener;
@@ -239,6 +240,7 @@ public class BaseController {
                     lastSyncLabel.setText(
                             I18nManager.tr("common.sync.lastSync", LocalDateTime.now().format(DATE_FMT)));
                 }
+                refreshDistrictScope();
                 onSyncSuccess();
             }
             case AUTH_REQUIRED -> triggerRelogin();
@@ -322,6 +324,10 @@ public class BaseController {
         if (appContext == null) return;
         districtListener = (obs, old, current) -> onDistrictChanged();
         appContext.activeDistrictIdProperty().addListener(new WeakChangeListener<>(districtListener));
+        // La première sync se termine souvent avant que cet écran n'existe : son
+        // SUCCESS est alors seulement restauré (sans effet de bord), et attendre le
+        // tick suivant laisserait le sélecteur masqué jusqu'à 30 s.
+        refreshDistrictScope();
     }
 
     /**
@@ -330,6 +336,22 @@ public class BaseController {
      */
     protected void onDistrictChanged() {
         // no-op par défaut
+    }
+
+    /**
+     * Réaligne le périmètre sur les quartiers désormais présents en base.
+     * <p>
+     * À la première connexion sur une installation neuve, la base locale est vide
+     * au moment du login : sans ce rejeu après la première sync, le sélecteur
+     * resterait masqué (et le badge d'un admin vide) jusqu'au prochain démarrage.
+     * L'en-tête n'est reconstruit que si la liste a réellement changé.
+     */
+    private void refreshDistrictScope() {
+        if (appContext == null) return;
+        boolean changed = appContext.initDistrictScope(new DistrictRepository().findAll());
+        if (changed && headerController != null) {
+            headerController.setupDistrictScope();
+        }
     }
 
     /**

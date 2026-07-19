@@ -77,6 +77,11 @@ public class HeaderController {
      */
     private final District allDistricts = allDistricts();
 
+    /** Vrai pendant la reconstruction des items, pour ignorer la sélection transitoire. */
+    private boolean repopulating;
+    /** Converter + listener installés : une seule fois, quel que soit le nombre de rejeux. */
+    private boolean districtSelectorReady;
+
     /**
      * Bouton de navigation par page (SETTINGS n'a pas de bouton de nav direct).
      */
@@ -106,24 +111,41 @@ public class HeaderController {
      * web. Si aucun quartier n'est résolu, on n'affiche rien plutôt qu'un contrôle
      * vide qui laisserait croire à une panne.
      */
-    private void setupDistrictScope() {
+    void setupDistrictScope() {
         if (appContext == null || districtSelector == null || districtBadge == null) return;
 
         if (appContext.canSwitchDistrict()) {
             List<District> districts = appContext.getAvailableDistricts();
-            if (districts.isEmpty()) return;
+            // Base locale encore vide (première connexion) : rien à proposer pour
+            // l'instant. La première sync rappellera cette méthode.
+            if (districts.isEmpty()) {
+                hide(districtSelector);
+                return;
+            }
 
-            districtSelector.setConverter(new StringConverter<>() {
-                @Override
-                public String toString(District d) {
-                    return d == null ? "" : d.getName();
-                }
+            // Drapeau explicite : ComboBox fournit un converter par défaut non nul,
+            // donc tester getConverter() ne dirait jamais « pas encore installé ».
+            if (!districtSelectorReady) {
+                districtSelectorReady = true;
+                districtSelector.setConverter(new StringConverter<>() {
+                    @Override
+                    public String toString(District d) {
+                        return d == null ? "" : d.getName();
+                    }
 
-                @Override
-                public District fromString(String s) {
-                    return null;
-                }
-            });
+                    @Override
+                    public District fromString(String s) {
+                        return null;
+                    }
+                });
+                // Enregistré une seule fois : cette méthode est rejouée après chaque
+                // sync, et ré-abonner à chaque passage empilerait les listeners.
+                districtSelector.getSelectionModel().selectedItemProperty().addListener((obs, old, picked) -> {
+                    if (picked != null && !repopulating) {
+                        appContext.setActiveDistrictId(picked == allDistricts ? null : picked.getId());
+                    }
+                });
+            }
 
             // Entrée « tous quartiers » en tête : la base d'un superAdmin contient
             // aussi des enregistrements sans quartier ou rattachés à un quartier
@@ -132,26 +154,34 @@ public class HeaderController {
             List<District> items = new ArrayList<>();
             items.add(allDistricts);
             items.addAll(districts);
-            districtSelector.getItems().setAll(items);
 
             District active = districts.stream()
                     .filter(d -> d.getId() != null && d.getId().equals(appContext.getActiveDistrictId()))
                     .findFirst()
                     .orElse(allDistricts);
-            districtSelector.getSelectionModel().select(active);
-            districtSelector.getSelectionModel().selectedItemProperty().addListener((obs, old, picked) -> {
-                if (picked != null) {
-                    appContext.setActiveDistrictId(picked == allDistricts ? null : picked.getId());
-                }
-            });
+
+            // setAll() vide la sélection avant de la rétablir : sans ce garde, le
+            // passage par « aucune sélection » écraserait le quartier actif.
+            repopulating = true;
+            try {
+                districtSelector.getItems().setAll(items);
+                districtSelector.getSelectionModel().select(active);
+            } finally {
+                repopulating = false;
+            }
             show(districtSelector);
             return;
         }
 
-        appContext.getActiveDistrictName().ifPresent(name -> {
+        appContext.getActiveDistrictName().ifPresentOrElse(name -> {
             districtBadge.setText(name);
             show(districtBadge);
-        });
+        }, () -> hide(districtBadge));
+    }
+
+    private static void hide(javafx.scene.Node node) {
+        node.setVisible(false);
+        node.setManaged(false);
     }
 
     private static void show(javafx.scene.Node node) {

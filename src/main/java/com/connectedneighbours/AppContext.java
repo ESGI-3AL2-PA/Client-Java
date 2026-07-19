@@ -12,6 +12,7 @@ import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -116,22 +117,42 @@ public class AppContext {
      * enregistrements sans quartier. Admin : le quartier administré, jamais celui
      * de résidence — un admin peut habiter ailleurs que là où il modère.
      *
+     * Idempotent, et rejouable après chaque synchronisation : à la première
+     * connexion sur une installation neuve la base locale est encore vide, donc
+     * ce premier appel ne connaît aucun quartier. Sans rejeu, le sélecteur
+     * resterait masqué toute la session.
+     *
      * @param districts quartiers connus localement (H2), donc disponibles hors ligne
+     * @return {@code true} si la liste des quartiers a changé — l'UI n'a besoin
+     *         d'être reconstruite que dans ce cas
      */
-    public void initDistrictScope(List<District> districts) {
-        availableDistricts = districts == null ? List.of() : List.copyOf(districts);
+    public boolean initDistrictScope(List<District> districts) {
+        List<District> resolved = districts == null ? List.of() : List.copyOf(districts);
+        boolean changed = !sameDistrictIds(availableDistricts, resolved);
+        availableDistricts = resolved;
 
         // La liste reste peuplée pour un admin : elle ne contient de toute façon que
         // son propre quartier (le serveur scope le flux de sync) et sert à résoudre
         // le nom affiché dans le badge.
         if (!canSwitchDistrict()) {
             activeDistrictId.set(currentUser != null ? currentUser.getAdminDistrictId() : null);
-            return;
+            return changed;
         }
 
+        // Le choix courant est persisté, donc relire la préférence préserve la
+        // sélection de l'opérateur au lieu de la réinitialiser à chaque sync.
         Optional<String> remembered = SessionConfig.loadActiveDistrictId()
                 .filter(id -> availableDistricts.stream().anyMatch(d -> id.equals(d.getId())));
         setActiveDistrictId(remembered.orElse(null));
+        return changed;
+    }
+
+    private static boolean sameDistrictIds(List<District> a, List<District> b) {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); i++) {
+            if (!Objects.equals(a.get(i).getId(), b.get(i).getId())) return false;
+        }
+        return true;
     }
 
     /** Nom du quartier actif, pour l'affichage. */
