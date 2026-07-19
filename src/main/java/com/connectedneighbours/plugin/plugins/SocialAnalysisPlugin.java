@@ -22,6 +22,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -125,6 +126,16 @@ public class SocialAnalysisPlugin implements Plugin {
         return lbl;
     }
 
+    private static void stretchColumns(TableView<?> table) {
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    }
+
+    private static void sizeToRowCount(TableView<?> table, int rowCount, double maxHeight) {
+        double height = 30 + Math.max(rowCount, 1) * 28 + 4;
+        table.setPrefHeight(Math.min(height, maxHeight));
+        table.setMinHeight(Region.USE_PREF_SIZE);
+    }
+
     private Tab buildUsersTab(AppContext ctx) {
         Tab tab = new Tab(I18nManager.tr("common.page.users"));
         tab.setClosable(false);
@@ -158,6 +169,7 @@ public class SocialAnalysisPlugin implements Plugin {
 
                     TableView<JsonNode> table = new TableView<>();
                     table.setPrefHeight(320);
+                    stretchColumns(table);
                     table.getColumns().addAll(
                             jsonCol(I18nManager.tr("plugin.social.col.email"), "email"),
                             jsonCol(I18nManager.tr("plugin.social.col.firstName"), "firstName"),
@@ -212,7 +224,7 @@ public class SocialAnalysisPlugin implements Plugin {
                     content.getChildren().add(chartsBox);
 
                     TableView<JsonNode> table = new TableView<>();
-                    table.setPrefHeight(280);
+                    stretchColumns(table);
                     TableColumn<JsonNode, String> catCol = new TableColumn<>(I18nManager.tr("common.field.category"));
                     catCol.setCellValueFactory(d -> {
                         JsonNode n = d.getValue();
@@ -237,7 +249,7 @@ public class SocialAnalysisPlugin implements Plugin {
                         }
                     }
                     table.setItems(items);
-                    VBox.setVgrow(table, Priority.ALWAYS);
+                    sizeToRowCount(table, items.size(), 280);
                     content.getChildren().add(table);
 
                     root.setCenter(content);
@@ -280,6 +292,7 @@ public class SocialAnalysisPlugin implements Plugin {
 
                     TableView<JsonNode> table = new TableView<>();
                     table.setPrefHeight(460);
+                    stretchColumns(table);
                     TableColumn<JsonNode, String> idCol = jsonCol(I18nManager.tr("common.field.id"), "id");
                     idCol.setPrefWidth(260);
                     TableColumn<JsonNode, String> typeCol = jsonCol(I18nManager.tr("common.field.type"), "type");
@@ -336,14 +349,17 @@ public class SocialAnalysisPlugin implements Plugin {
                             content.getChildren().add(sectionTitle(
                                     I18nManager.tr("plugin.social.section.eventsTotal", evtTotal, evts.size())));
 
+                            HBox evtBox = new HBox(24);
+
                             PieChart evtStatusChart = buildPieChart(
                                     countByKey(evts, "status"), I18nManager.tr("plugin.social.chart.byStatus"));
                             if (!evtStatusChart.getData().isEmpty()) {
-                                content.getChildren().add(evtStatusChart);
+                                evtBox.getChildren().add(evtStatusChart);
                             }
 
                             TableView<JsonNode> evtTable = new TableView<>();
                             evtTable.setPrefHeight(200);
+                            stretchColumns(evtTable);
                             evtTable.getColumns().addAll(
                                     jsonCol(I18nManager.tr("plugin.social.col.title"), "title"),
                                     jsonCol(I18nManager.tr("plugin.social.col.location"), "location"),
@@ -354,7 +370,10 @@ public class SocialAnalysisPlugin implements Plugin {
                             ObservableList<JsonNode> evtItems = FXCollections.observableArrayList();
                             for (JsonNode node : evts) evtItems.add(node);
                             evtTable.setItems(evtItems);
-                            content.getChildren().add(evtTable);
+                            HBox.setHgrow(evtTable, Priority.ALWAYS);
+                            evtBox.getChildren().add(evtTable);
+
+                            content.getChildren().add(evtBox);
                         }
 
                         if (votesJson != null && votesJson.has("data")) {
@@ -364,14 +383,17 @@ public class SocialAnalysisPlugin implements Plugin {
                             content.getChildren().add(sectionTitle(
                                     I18nManager.tr("plugin.social.section.votesTotal", voteTotal, votes.size())));
 
+                            HBox voteBox = new HBox(24);
+
                             PieChart voteStatusChart = buildPieChart(
                                     countByKey(votes, "status"), I18nManager.tr("plugin.social.chart.byStatus"));
                             if (!voteStatusChart.getData().isEmpty()) {
-                                content.getChildren().add(voteStatusChart);
+                                voteBox.getChildren().add(voteStatusChart);
                             }
 
                             TableView<JsonNode> voteTable = new TableView<>();
                             voteTable.setPrefHeight(200);
+                            stretchColumns(voteTable);
                             voteTable.getColumns().addAll(
                                     jsonCol(I18nManager.tr("plugin.social.col.question"), "question"),
                                     jsonCol(I18nManager.tr("common.field.type"), "voteType"),
@@ -382,8 +404,10 @@ public class SocialAnalysisPlugin implements Plugin {
                             ObservableList<JsonNode> voteItems = FXCollections.observableArrayList();
                             for (JsonNode node : votes) voteItems.add(node);
                             voteTable.setItems(voteItems);
-                            VBox.setVgrow(voteTable, Priority.ALWAYS);
-                            content.getChildren().add(voteTable);
+                            HBox.setHgrow(voteTable, Priority.ALWAYS);
+                            voteBox.getChildren().add(voteTable);
+
+                            content.getChildren().add(voteBox);
                         }
 
                         if (content.getChildren().isEmpty()) {
