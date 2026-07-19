@@ -17,7 +17,6 @@ les incidents, consulter les statistiques et superviser l'activité de la commun
 - [Systeme de themes](#système-de-thèmes)
 - [Systeme de plugins](#système-de-plugins)
 - [Internationalisation (i18n)](#internationalisation-i18n)
-- [Mode console](#mode-console)
 - [Tests](#tests)
 - [Etat d'avancement](#état-davancement)
 
@@ -38,7 +37,6 @@ les incidents, consulter les statistiques et superviser l'activité de la commun
   `styleClass` au lieu de styles inline.
 - **Plugins extensibles** : architecture `ServiceLoader` avec chargement hybride (built-in + JARs externes dans
   `./plugins/`). Plugin de validation HelloPlugin fourni.
-- **Mode console** : alternative texte au GUI via l'argument `--console`.
 - **Internationalisation** : support FR / EN / ES via `ResourceBundle`.
 
 ---
@@ -69,9 +67,6 @@ mvn compile
 # Lancer l'application (mode GUI)
 mvn javafx:run
 
-# Lancer en mode console
-mvn javafx:run -Djavafx.args="--console"
-
 # Lancer les tests
 mvn test
 
@@ -79,8 +74,7 @@ mvn test
 mvn clean package
 
 # Executer le fat JAR
-java -jar target/admin-desktop-1.0.0.jar            # mode GUI
-java -jar target/admin-desktop-1.0.0.jar --console   # mode console
+java -jar target/admin-desktop-1.0.0.jar
 ```
 
 > **Note** : assurez-vous que `JAVA_HOME` pointe vers un JDK 21.
@@ -93,9 +87,8 @@ Le projet suit le pattern **MVC** (Model-View-Controller) avec une couche servic
 
 ```
 com.connectedneighbours/
-├── Launcher.java                    # Point d'entree : choisit GUI ou console (--console)
+├── Launcher.java                    # Point d'entree
 ├── MainApp.java                     # Point d'entree JavaFX (login SSO ou demarrage offline)
-├── ConsoleApp.java                  # Point d'entree mode console (menu texte)
 ├── AppContext.java                  # Contexte global (auth, API, user courant)
 │
 ├── controller/                      # Controleurs FXML (MVC)
@@ -341,25 +334,6 @@ Le changement de langue se fait a chaud depuis l'ecran des parametres via une `C
 
 ---
 
-## Mode console
-
-L'application peut etre lancee en mode texte via l'argument `--console` :
-
-```bash
-java -jar admin-desktop-1.0.0.jar --console
-```
-
-Le `Launcher.java` detecte l'argument et redirige vers `ConsoleApp.java` au lieu de `MainApp.java`. Le mode console
-permet de :
-
-- Consulter la liste des incidents
-- Consulter les statistiques
-- Lancer une synchronisation manuelle
-
-> Le mode console n'utilise pas le SSO et n'est pas concerne par le flow d'authentification navigateur.
-
----
-
 ## Tests
 
 Les tests utilisent **JUnit 5** et **Mockito** :
@@ -406,7 +380,6 @@ mvn test
   `/api/social/...` (interactions, top contributeurs)
 - `LocalCalendarPlugin` (212 lignes) — UI JavaFX (TableView + ComboBox de filtre) + appels API
   `/api/events` en asynchrone (`CompletableFuture`)
-- Mode console (`Launcher` + `ConsoleApp`)
 - Demarrage offline-first (`SessionConfig`)
 - `AppContext` (contexte global partage, injection dans les controleurs)
 
