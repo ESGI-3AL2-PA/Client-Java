@@ -1,5 +1,7 @@
 package com.connectedneighbours.theme;
 
+import com.connectedneighbours.i18n.I18nManager;
+
 import java.io.File;
 import java.net.URL;
 import java.util.Locale;
@@ -84,8 +86,19 @@ public final class Theme {
         return id;
     }
 
+    /**
+     * Libellé affichable, traduit dynamiquement selon la langue courante
+     * pour les deux thèmes built-in connus ({@link #ID_LIGHT}, {@link #ID_DARK},
+     * clés {@code theme.light.name} / {@code theme.dark.name}). Tout autre
+     * thème (personnalisé, ou construit via {@link #fromClasspath} avec un id
+     * arbitraire) conserve le libellé fourni à la construction.
+     */
     public String getDisplayName() {
-        return displayName;
+        return switch (id) {
+            case ID_LIGHT -> I18nManager.tr("theme.light.name");
+            case ID_DARK -> I18nManager.tr("theme.dark.name");
+            default -> displayName;
+        };
     }
 
     /**
@@ -114,6 +127,6 @@ public final class Theme {
 
     @Override
     public String toString() {
-        return displayName;
+        return getDisplayName();
     }
 }
