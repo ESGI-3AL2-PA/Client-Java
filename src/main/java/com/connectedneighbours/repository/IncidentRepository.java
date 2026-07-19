@@ -179,15 +179,19 @@ public class IncidentRepository {
     }
 
     /**
-     * Insère un incident venu du flux serveur. N'inscrit <em>aucune</em>
+     * Écrit un incident venu du flux serveur. N'inscrit <em>aucune</em>
      * écriture en attente : ce qui descend du serveur ne doit jamais remonter.
+     *
+     * <p>MERGE et non INSERT, pour la même raison que
+     * {@link UserRepository#saveFromSync} : le pull rejoue des enregistrements
+     * déjà connus et l'INSERT violait la clé primaire.</p>
      *
      * @param baseUpdatedAt l'{@code updatedAt} serveur, conservé tel quel comme
      *                      jeton de concurrence optimiste
      */
     public void saveFromSync(Incident incident, String mongoId, String baseUpdatedAt) {
-        String sql = "INSERT INTO INCIDENTS (id, reporterId, districtId, category, description, photoUrl, status, assignedTo, created_at, updated_at, synced, mongo_id, base_updated_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)";
+        String sql = "MERGE INTO INCIDENTS (id, reporterId, districtId, category, description, photoUrl, status, assignedTo, created_at, updated_at, synced, mongo_id, base_updated_at) " +
+                "KEY (id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)";
         try {
             DatabaseUtil.executeUpdate(sql,
                     incident.getId(),

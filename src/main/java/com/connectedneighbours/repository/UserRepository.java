@@ -121,12 +121,17 @@ public class UserRepository {
     }
 
     /**
-     * Insère un utilisateur venu du flux serveur, sans inscrire d'écriture en
+     * Écrit un utilisateur venu du flux serveur, sans inscrire d'écriture en
      * attente : ce qui descend ne doit jamais remonter.
+     *
+     * <p>MERGE et non INSERT : un pull rejoue les enregistrements déjà présents
+     * localement (curseur relu depuis 0, resynchronisation, redémarrage), et un
+     * INSERT y violait la clé primaire — l'exception interrompait alors le reste
+     * du lot. Le flux serveur fait autorité, donc réécrire la ligne est correct.</p>
      */
     public void saveFromSync(User user, String mongoId, String baseUpdatedAt) {
-        String sql = "INSERT INTO users (id, email, firstName, lastName, phone, role, status, balance, address, districtId, created_at, updated_at, synced, mongo_id, base_updated_at) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)";
+        String sql = "MERGE INTO users (id, email, firstName, lastName, phone, role, status, balance, address, districtId, created_at, updated_at, synced, mongo_id, base_updated_at) " +
+                "KEY (id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)";
         try {
             DatabaseUtil.executeUpdate(sql,
                     user.getId(),

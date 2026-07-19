@@ -89,7 +89,9 @@ public class DistrictRepository {
      * résolution id → nom, qui fonctionnent donc hors-ligne.</p>
      */
     public void saveFromSync(District district, String mongoId) {
-        String sql = "INSERT INTO districts (id, name, mongo_id) VALUES (?, ?, ?)";
+        // MERGE et non INSERT : le pull rejoue des quartiers déjà connus et
+        // l'INSERT y violait la clé primaire (cf. UserRepository#saveFromSync).
+        String sql = "MERGE INTO districts (id, name, mongo_id) KEY (id) VALUES (?, ?, ?)";
         try {
             DatabaseUtil.executeUpdate(sql,
                     district.getId(),
