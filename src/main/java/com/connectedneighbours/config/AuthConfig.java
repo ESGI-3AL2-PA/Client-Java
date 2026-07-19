@@ -24,7 +24,8 @@ public class AuthConfig {
      * profondeur, pas la barrière : elle est côté serveur, hors de portée d'un
      * patch du jar.
      */
-    public static final Set<String> ADMIN_ROLES = Set.of("admin", "superAdmin");
+    public static final String SUPER_ADMIN_ROLE = "superAdmin";
+    public static final Set<String> ADMIN_ROLES = Set.of("admin", SUPER_ADMIN_ROLE);
     private static final Preferences PREFS = Preferences.userNodeForPackage(AuthConfig.class);
     private static final String KEY_SCHEME = "auth.scheme";
     private static final String KEY_HOST = "auth.host";
@@ -127,6 +128,11 @@ public class AuthConfig {
     /** True si le rôle porté par le token donne accès à l'application. */
     public static boolean isAdminRole(String role) {
         return role != null && ADMIN_ROLES.contains(role);
+    }
+
+    /** Seul le superAdmin n'est pas lié à un quartier et peut donc en changer. */
+    public static boolean isSuperAdminRole(String role) {
+        return SUPER_ADMIN_ROLE.equals(role);
     }
 
     public static void resetToDefaults() {

@@ -3,6 +3,7 @@ package com.connectedneighbours.controller;
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.i18n.I18nManager;
+import com.connectedneighbours.model.District;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.plugin.PluginManager;
 import com.connectedneighbours.theme.ThemeManager;
@@ -13,13 +14,17 @@ import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.Tooltip;
+import javafx.util.StringConverter;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,6 +38,12 @@ public class HeaderController {
 
     private static final String STYLE_ACTIVE = "nav-button-active";
     private static final String STYLE_INACTIVE = "nav-button";
+
+    private static District allDistricts() {
+        District d = new District();
+        d.setName(I18nManager.tr("header.district.all"));
+        return d;
+    }
 
     @FXML
     private Button btnDashboard;
@@ -50,8 +61,21 @@ public class HeaderController {
     private Button btnLogout;
     @FXML
     private Label currentUserLabel;
+    @FXML
+    private ComboBox<District> districtSelector;
+    @FXML
+    private Label districtBadge;
 
     private AppContext appContext;
+
+    /**
+     * Sentinelle « aucun filtre » du sélecteur. Un id {@code null} la distingue
+     * d'un vrai quartier et correspond au périmètre non restreint.
+     * <p>
+     * Par instance et non statique : son libellé est traduit, et un champ statique
+     * figerait la langue au chargement de la classe.
+     */
+    private final District allDistricts = allDistricts();
 
     /**
      * Bouton de navigation par page (SETTINGS n'a pas de bouton de nav direct).
@@ -73,6 +97,66 @@ public class HeaderController {
         navButtons.put(Page.STATISTICS, btnStatistics);
         disableUsersButton();
         refreshCurrentUserLabel();
+        setupDistrictScope();
+    }
+
+    /**
+     * Affiche le périmètre quartier : liste déroulante pour un superAdmin, badge
+     * en lecture seule pour un admin — même répartition que l'AdminLayout du front
+     * web. Si aucun quartier n'est résolu, on n'affiche rien plutôt qu'un contrôle
+     * vide qui laisserait croire à une panne.
+     */
+    private void setupDistrictScope() {
+        if (appContext == null || districtSelector == null || districtBadge == null) return;
+
+        if (appContext.canSwitchDistrict()) {
+            List<District> districts = appContext.getAvailableDistricts();
+            if (districts.isEmpty()) return;
+
+            districtSelector.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(District d) {
+                    return d == null ? "" : d.getName();
+                }
+
+                @Override
+                public District fromString(String s) {
+                    return null;
+                }
+            });
+
+            // Entrée « tous quartiers » en tête : la base d'un superAdmin contient
+            // aussi des enregistrements sans quartier ou rattachés à un quartier
+            // absent localement. Sans cette échappatoire ils ne seraient atteignables
+            // depuis aucune sélection, donc invisibles.
+            List<District> items = new ArrayList<>();
+            items.add(allDistricts);
+            items.addAll(districts);
+            districtSelector.getItems().setAll(items);
+
+            District active = districts.stream()
+                    .filter(d -> d.getId() != null && d.getId().equals(appContext.getActiveDistrictId()))
+                    .findFirst()
+                    .orElse(allDistricts);
+            districtSelector.getSelectionModel().select(active);
+            districtSelector.getSelectionModel().selectedItemProperty().addListener((obs, old, picked) -> {
+                if (picked != null) {
+                    appContext.setActiveDistrictId(picked == allDistricts ? null : picked.getId());
+                }
+            });
+            show(districtSelector);
+            return;
+        }
+
+        appContext.getActiveDistrictName().ifPresent(name -> {
+            districtBadge.setText(name);
+            show(districtBadge);
+        });
+    }
+
+    private static void show(javafx.scene.Node node) {
+        node.setVisible(true);
+        node.setManaged(true);
     }
 
     /**
@@ -134,6 +218,19 @@ public class HeaderController {
                     getClass().getResource("/com/connectedneighbours/fxml/statistics.fxml")
             );
             loader.setResources(I18nManager.getBundle());
+            // Les statistiques sont historisées par quartier : l'écran doit lire la
+            // série du quartier consulté, pas l'agrégat tous quartiers confondus.
+            String districtId = appContext != null ? appContext.getActiveDistrictId() : null;
+            loader.setControllerFactory(cls -> {
+                if (cls == StatisticsController.class) {
+                    return new StatisticsController(districtId);
+                }
+                try {
+                    return cls.getDeclaredConstructors()[0].newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             Parent root = loader.load();
 
             Stage stage = new Stage();
@@ -203,7 +300,9 @@ public class HeaderController {
         Stage stage = (Stage) btnLogout.getScene().getWindow();
         Object mainApp = stage.getUserData();
         if (mainApp instanceof MainApp app) {
-            app.backToLogin();
+            // Déconnexion explicite : on exige une ré-authentification, sinon le
+            // cookie encore valide du navigateur reconnecte le même compte.
+            app.backToLogin(true);
         } else {
             stage.close();
         }

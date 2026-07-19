@@ -84,8 +84,9 @@
             <padding>
                 <Insets top="8" right="8" bottom="8" left="8"/>
             </padding>
-            <Circle fx:id="syncStatusDot" radius="6" fill="GRAY"/>
-            <Label fx:id="syncStatusLabel" text="%common.sync.offline" styleClass="status-bar-label"/>
+            <!-- Défaut neutre : l'état réel est restauré par BaseController#setupSync. -->
+            <Circle fx:id="syncStatusDot" radius="6" fill="LIGHTGRAY"/>
+            <Label fx:id="syncStatusLabel" text="%common.sync.checking" styleClass="status-bar-label"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="lastSyncLabel" styleClass="status-bar-secondary"/>
             <Button fx:id="conflictsButton" text="Conflits" visible="false" managed="false"

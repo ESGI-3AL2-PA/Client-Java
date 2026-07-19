@@ -18,7 +18,14 @@ public class User {
     private String status;
     private Double balance;
     private String address;
+    /** Quartier de résidence. */
     private String districtId;
+    /**
+     * Quartier administré (rôle admin uniquement) — claim du JWT, renvoyé par
+     * /auth/userinfo. Distinct de {@link #districtId} : un admin peut résider
+     * ailleurs que dans le quartier dont il a la charge.
+     */
+    private String adminDistrictId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Boolean synced;
@@ -135,6 +142,14 @@ public class User {
 
     public void setDistrictId(String districtId) {
         this.districtId = districtId;
+    }
+
+    public String getAdminDistrictId() {
+        return adminDistrictId;
+    }
+
+    public void setAdminDistrictId(String adminDistrictId) {
+        this.adminDistrictId = adminDistrictId;
     }
 
     public LocalDateTime getCreatedAt() {

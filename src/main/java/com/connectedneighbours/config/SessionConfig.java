@@ -27,6 +27,7 @@ public class SessionConfig {
 
     private static final String KEY_LAST_USER = "session.lastUser";
     private static final String KEY_LAST_LOGIN_AT = "session.lastLoginAt";
+    private static final String KEY_ACTIVE_DISTRICT = "district.activeId";
 
     private SessionConfig() {
     }
@@ -82,5 +83,27 @@ public class SessionConfig {
     public static void clearLastUser() {
         PREFS.remove(KEY_LAST_USER);
         PREFS.remove(KEY_LAST_LOGIN_AT);
+    }
+
+    /**
+     * Quartier sélectionné par un superAdmin, retenu d'une session à l'autre —
+     * équivalent du {@code localStorage["adminDistrictScope"]} de l'admin-front.
+     * Sans effet pour un admin, dont le quartier est imposé par son rôle.
+     */
+    public static void saveActiveDistrictId(String districtId) {
+        if (districtId == null || districtId.isBlank()) {
+            PREFS.remove(KEY_ACTIVE_DISTRICT);
+        } else {
+            PREFS.put(KEY_ACTIVE_DISTRICT, districtId);
+        }
+    }
+
+    public static Optional<String> loadActiveDistrictId() {
+        String id = PREFS.get(KEY_ACTIVE_DISTRICT, null);
+        return id == null || id.isBlank() ? Optional.empty() : Optional.of(id);
+    }
+
+    public static void clearActiveDistrictId() {
+        PREFS.remove(KEY_ACTIVE_DISTRICT);
     }
 }

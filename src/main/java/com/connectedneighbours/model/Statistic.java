@@ -16,6 +16,9 @@ public class Statistic {
 
     private String period;
 
+    /** Quartier mesuré. {@code null} = agrégat tous quartiers confondus. */
+    private String districtId;
+
     @JsonProperty("recorded_at")
     private LocalDateTime recordedAt;
 
@@ -23,9 +26,14 @@ public class Statistic {
     }
 
     public Statistic(String metricKey, Double metricValue, String period) {
+        this(metricKey, metricValue, period, null);
+    }
+
+    public Statistic(String metricKey, Double metricValue, String period, String districtId) {
         this.metricKey = metricKey;
         this.metricValue = metricValue;
         this.period = period;
+        this.districtId = districtId;
         this.recordedAt = LocalDateTime.now();
     }
 
@@ -62,6 +70,14 @@ public class Statistic {
         this.period = period;
     }
 
+    public String getDistrictId() {
+        return districtId;
+    }
+
+    public void setDistrictId(String districtId) {
+        this.districtId = districtId;
+    }
+
     public LocalDateTime getRecordedAt() {
         return recordedAt;
     }
@@ -77,6 +93,7 @@ public class Statistic {
                 ", metricKey='" + metricKey + '\'' +
                 ", metricValue=" + metricValue +
                 ", period='" + period + '\'' +
+                ", districtId='" + districtId + '\'' +
                 ", recordedAt=" + recordedAt +
                 '}';
     }

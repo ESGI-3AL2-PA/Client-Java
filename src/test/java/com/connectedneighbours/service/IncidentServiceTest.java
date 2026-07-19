@@ -30,6 +30,24 @@ class IncidentServiceTest {
         service = new IncidentService(repository, pendingRepo);
     }
 
+    /**
+     * Sans quartier l'incident est refusé au push (out-of-district) et n'apparaît
+     * sous aucune sélection : il est perdu des deux côtés.
+     */
+    @Test
+    void createIncident_stampsTheGivenDistrict() {
+        Incident created = service.createIncident("voirie", "nid de poule", "u1", "d1");
+
+        assertEquals("d1", created.getDistrictId());
+    }
+
+    @Test
+    void createIncident_withoutDistrict_keepsTheLegacyEmptyValue() {
+        Incident created = service.createIncident("voirie", "nid de poule", "u1");
+
+        assertEquals("", created.getDistrictId());
+    }
+
     @Test
     void createIncident_queuesInsertForPush() {
         Incident created = service.createIncident("voirie", "nid de poule", "u1");

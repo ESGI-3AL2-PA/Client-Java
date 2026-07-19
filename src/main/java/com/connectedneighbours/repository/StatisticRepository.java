@@ -66,14 +66,48 @@ public class StatisticRepository {
         }
     }
 
+    /**
+     * Métriques d'un quartier. {@code districtId} nul cible les agrégats
+     * tous-quartiers : {@code = ?} ne filtrerait rien sur NULL en SQL, d'où le
+     * {@code IS NULL} explicite.
+     */
+    public List<Statistic> findByDistrictId(String districtId) {
+        String sql = districtId == null
+                ? "SELECT * FROM statistics WHERE districtId IS NULL"
+                : "SELECT * FROM statistics WHERE districtId = ?";
+        try {
+            return districtId == null
+                    ? DatabaseUtil.executeQuery(sql, this::extractStatistic)
+                    : DatabaseUtil.executeQuery(sql, this::extractStatistic, districtId);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
+            return List.of();
+        }
+    }
+
+    public List<Statistic> findByMetricKeyAndPeriodAndDistrict(String metricKey, String period, String districtId) {
+        String sql = districtId == null
+                ? "SELECT * FROM statistics WHERE metric_key = ? AND period = ? AND districtId IS NULL"
+                : "SELECT * FROM statistics WHERE metric_key = ? AND period = ? AND districtId = ?";
+        try {
+            return districtId == null
+                    ? DatabaseUtil.executeQuery(sql, this::extractStatistic, metricKey, period)
+                    : DatabaseUtil.executeQuery(sql, this::extractStatistic, metricKey, period, districtId);
+        } catch (SQLException e) {
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
+            return List.of();
+        }
+    }
+
     public void save(Statistic statistic) {
-        String sql = "INSERT INTO statistics (metric_key, metric_value, period, recorded_at) " +
-                "VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO statistics (metric_key, metric_value, period, districtId, recorded_at) " +
+                "VALUES (?, ?, ?, ?, ?)";
         try {
             DatabaseUtil.executeUpdate(sql,
                     statistic.getMetricKey(),
                     statistic.getMetricValue(),
                     statistic.getPeriod(),
+                    statistic.getDistrictId(),
                     statistic.getRecordedAt() != null ? Timestamp.valueOf(statistic.getRecordedAt()) : null
             );
         } catch (SQLException e) {
@@ -82,12 +116,14 @@ public class StatisticRepository {
     }
 
     public void update(Statistic statistic) {
-        String sql = "UPDATE statistics SET metric_key = ?, metric_value = ?, period = ?, recorded_at = ? WHERE id = ?";
+        String sql = "UPDATE statistics SET metric_key = ?, metric_value = ?, period = ?, districtId = ?, "
+                + "recorded_at = ? WHERE id = ?";
         try {
             DatabaseUtil.executeUpdate(sql,
                     statistic.getMetricKey(),
                     statistic.getMetricValue(),
                     statistic.getPeriod(),
+                    statistic.getDistrictId(),
                     statistic.getRecordedAt() != null ? Timestamp.valueOf(statistic.getRecordedAt()) : null,
                     statistic.getId()
             );
@@ -111,6 +147,7 @@ public class StatisticRepository {
         statistic.setMetricKey(rs.getString("metric_key"));
         statistic.setMetricValue(rs.getDouble("metric_value"));
         statistic.setPeriod(rs.getString("period"));
+        statistic.setDistrictId(rs.getString("districtId"));
 
         Timestamp recordedAt = rs.getTimestamp("recorded_at");
         if (recordedAt != null) {

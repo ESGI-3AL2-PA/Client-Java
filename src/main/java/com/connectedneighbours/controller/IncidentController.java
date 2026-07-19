@@ -111,11 +111,17 @@ public class IncidentController extends BaseController {
         setupFilters();
         loadData();
         setupSync();
+        setupDistrictScope();
         setupHeader(Page.INCIDENTS);
     }
 
     @Override
     protected void onSyncSuccess() {
+        loadData();
+    }
+
+    @Override
+    protected void onDistrictChanged() {
         loadData();
     }
 
@@ -349,7 +355,8 @@ public class IncidentController extends BaseController {
             districtsMap.put(d.getId(), d);
         }
 
-        allIncidents = incidentService.getAllIncidents();
+        allIncidents = incidentService.getIncidentsByDistrict(
+                appContext != null ? appContext.getActiveDistrictId() : null);
         refreshCategoryFilter();
         applyFilters();
     }
