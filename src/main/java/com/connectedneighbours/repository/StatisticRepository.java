@@ -8,15 +8,19 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class StatisticRepository {
+
+    private static final Logger LOG = Logger.getLogger(StatisticRepository.class.getName());
 
     public List<Statistic> findAll() {
         String sql = "SELECT * FROM statistics";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractStatistic);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -27,7 +31,7 @@ public class StatisticRepository {
             List<Statistic> statistics = DatabaseUtil.executeQuery(sql, this::extractStatistic, id);
             return statistics.isEmpty() ? Optional.empty() : Optional.of(statistics.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -37,7 +41,7 @@ public class StatisticRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractStatistic, metricKey);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -47,7 +51,7 @@ public class StatisticRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractStatistic, period);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -57,7 +61,7 @@ public class StatisticRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractStatistic, metricKey, period);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -73,7 +77,7 @@ public class StatisticRepository {
                     statistic.getRecordedAt() != null ? Timestamp.valueOf(statistic.getRecordedAt()) : null
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -88,7 +92,7 @@ public class StatisticRepository {
                     statistic.getId()
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -97,7 +101,7 @@ public class StatisticRepository {
         try {
             DatabaseUtil.executeUpdate(sql, id);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
