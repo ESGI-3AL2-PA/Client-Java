@@ -141,6 +141,11 @@ public class SyncService {
             // plus d'access token --> relance le login navigateur.
             notifyStatus(SyncStatus.AUTH_REQUIRED);
         } catch (Exception e) {
+            java.util.logging.Logger.getLogger(SyncService.class.getName()).log(
+                    java.util.logging.Level.SEVERE,
+                    "Échec du cycle de synchronisation",
+                    e
+            );
             notifyStatus(SyncStatus.ERROR);
         } finally {
             isSyncing = false;
