@@ -97,8 +97,26 @@ public class SettingsController {
 		themeCombo.setButtonCell(cell(Theme::getDisplayName));
 		themeCombo.setItems(FXCollections.observableArrayList(ThemeManager.getAvailableThemes()));
 		themeCombo.setValue(ThemeManager.getCurrent());
-		// Pas d'application automatique sur sélection : l'utilisateur doit
-		// cliquer sur « Recharger » pour persiste + appliquer le thème.
+		// Le thème s'applique à la sélection. Auparavant il fallait cliquer sur
+		// « Recharger », mais rien ne le disait : choisir un thème ne faisait
+		// visiblement rien, ce qui se lit comme un bug. « Recharger » ne sert
+		// plus qu'à re-scanner ./themes/.
+		themeCombo.valueProperty().addListener((obs, old, selected) -> {
+			if (selected == null || selected.equals(ThemeManager.getCurrent())) return;
+			applyTheme(selected);
+		});
+	}
+
+	/**
+	 * Persiste le thème et l'applique à la fenêtre Paramètres ainsi qu'à la
+	 * fenêtre principale derrière elle.
+	 */
+	private void applyTheme(Theme theme) {
+		ThemeManager.setCurrent(theme);
+		if (hostField.getScene() != null) {
+			ThemeManager.applyTheme(hostField.getScene());
+		}
+		applyThemeToOwner();
 	}
 
 	private void initLanguageCombo() {
@@ -128,18 +146,9 @@ public class SettingsController {
 		Theme selected = themeCombo.getValue();
 		themeCombo.setItems(FXCollections.observableArrayList(themes));
 		// Re-sélectionne le thème choisi s'il est toujours disponible,
-		// sinon retombe sur le thème courant persisté.
-		Theme toApply = themes.contains(selected) ? selected : ThemeManager.getCurrent();
-		themeCombo.setValue(toApply);
-		// Persiste + applique le thème sélectionné.
-		ThemeManager.setCurrent(toApply);
-		// Scène de la fenêtre Paramètres (pop-up).
-		if (hostField.getScene() != null) {
-			ThemeManager.applyTheme(hostField.getScene());
-		}
-		// Scène de la fenêtre principale (propriétaire du pop-up) pour que
-		// le thème s'applique immédiatement au dashboard/incidents derrière.
-		applyThemeToOwner();
+		// sinon retombe sur le thème courant persisté. Le listener de
+		// initThemeCombo() se charge de l'appliquer si la valeur change.
+		themeCombo.setValue(themes.contains(selected) ? selected : ThemeManager.getCurrent());
 	}
 
 	private void applyThemeToOwner() {

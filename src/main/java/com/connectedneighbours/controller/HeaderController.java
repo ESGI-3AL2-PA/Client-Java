@@ -15,6 +15,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
+import javafx.scene.control.Tooltip;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
@@ -69,9 +70,24 @@ public class HeaderController {
         navButtons = new EnumMap<>(Page.class);
         navButtons.put(Page.DASHBOARD, btnDashboard);
         navButtons.put(Page.INCIDENTS, btnIncidents);
-        navButtons.put(Page.USERS, btnUsers);
         navButtons.put(Page.STATISTICS, btnStatistics);
+        disableUsersButton();
         refreshCurrentUserLabel();
+    }
+
+    /**
+     * L'écran utilisateurs n'existe pas encore. Le bouton restait cliquable et
+     * ne faisait rien, ce qui se lit comme une panne — on le désactive et on
+     * dit pourquoi plutôt que d'avaler le clic en silence.
+     *
+     * <p>{@code btnUsers} est volontairement absent de {@link #navButtons} :
+     * {@link #setActivePage(Page)} y fait un {@code setDisable(active)} qui
+     * réactiverait le bouton dès qu'on quitte la page.</p>
+     */
+    private void disableUsersButton() {
+        if (btnUsers == null) return;
+        btnUsers.setDisable(true);
+        btnUsers.setTooltip(new Tooltip("Écran utilisateurs à venir — non disponible dans cette version."));
     }
 
     private void refreshCurrentUserLabel() {
@@ -109,11 +125,6 @@ public class HeaderController {
     @FXML
     public void onIncidentsClick() {
         navigate(btnIncidents, MainApp::showIncidents);
-    }
-
-    @FXML
-    public void onUsersClick() {
-        System.out.println("[TODO] Ouvrir écran utilisateurs");
     }
 
     @FXML
@@ -182,11 +193,11 @@ public class HeaderController {
         Alert confirm = new Alert(
                 Alert.AlertType.CONFIRMATION,
                 I18nManager.tr("header.logout.confirm.message"),
-                ButtonType.YES, ButtonType.NO
+                Buttons.YES, Buttons.NO
         );
         confirm.setTitle(I18nManager.tr("header.logout.confirm.title"));
         confirm.setHeaderText(null);
-        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
+        if (confirm.showAndWait().orElse(Buttons.NO) != Buttons.YES) return;
 
         appContext.logout();
         Stage stage = (Stage) btnLogout.getScene().getWindow();

@@ -100,7 +100,7 @@
 					</HBox>
 				</GridPane>
 
-				<Label fx:id="themeHintLabel" styleClass="text-faint"
+				<Label fx:id="themeHintLabel" styleClass="text-faint" maxWidth="620"
 					   text="%settings.appearance.hint"
 					   wrapText="true"/>
 			</VBox>

@@ -32,7 +32,7 @@ les incidents, consulter les statistiques et superviser l'activité de la commun
   graphiques PieChart (incidents par statut et par categorie).
 - **Synchronisation automatique** : push/pull periodique avec l'API Node.js, resolution de conflits Last-Write-Wins,
   fonctionnement hors-ligne complet.
-- **SSO / JWT** : authentification partagee avec l'application web via navigateur et callback loopback.
+- **SSO / JWT** : authentification partagee avec l'application web (authorization code + PKCE, callback loopback). Reserve aux administrateurs.
 - **Themes** : clair, sombre et themes personnalises (CSS deposables dans `./themes/`). Tous les FXML utilisent des
   `styleClass` au lieu de styles inline.
 - **Plugins extensibles** : architecture `ServiceLoader` avec chargement hybride (built-in + JARs externes dans
@@ -44,7 +44,7 @@ les incidents, consulter les statistiques et superviser l'activité de la commun
 ## Prerequis
 
 | Outil     | Version requise         |
-|-----------|-------------------------|
+| --------- | ----------------------- |
 | **JDK**   | 21+                     |
 | **Maven** | 3.8+                    |
 | **OS**    | Windows / macOS / Linux |
@@ -151,11 +151,13 @@ com.connectedneighbours/
 │   └── SessionConfig.java           # Dernier user connecte (demarrage offline-first)
 │
 ├── auth/                            # SSO / JWT
-│   ├── SsoAuthService.java          # Flow SSO : navigateur -> callback loopback -> JWT
-│   ├── CallbackServer.java          # Mini serveur HTTP loopback pour reception du token
-│   ├── JwtVerifier.java             # Verification JWT via JWKS RSA
+│   ├── SsoAuthService.java          # Flow SSO : navigateur -> code -> echange -> JWT verifie
+│   ├── CallbackServer.java          # Mini serveur HTTP loopback pour reception du code
+│   ├── JwtVerifier.java             # Verification JWT via JWKS RSA (cache TTL)
+│   ├── PkceChallenge.java           # Paire verifier/challenge PKCE S256 + state
 │   └── exception/
-│       └── TokenUnavailableException.java
+│       ├── TokenUnavailableException.java
+│       └── NotAdminException.java   # Compte non-administrateur
 │
 └── util/                            # Utilitaires
     ├── DatabaseUtil.java            # Utilitaires BDD
@@ -194,7 +196,7 @@ src/main/resources/
 ### Dependances principales
 
 | Dependance       | Version      | Role                                                    |
-|------------------|--------------|---------------------------------------------------------|
+| ---------------- | ------------ | ------------------------------------------------------- |
 | JavaFX           | 21.0.11-ea+4 | UI Desktop (controls, fxml, web, swing)                 |
 | H2 Database      | 2.4.240      | BDD embarquee offline-first (`jdbc:h2:./data/admin_db`) |
 | OkHttp           | 4.12.0       | Client HTTP pour les appels vers l'API Node.js          |
@@ -208,7 +210,7 @@ src/main/resources/
 ### Plugins Maven
 
 | Plugin                  | Version | Role                                      |
-|-------------------------|---------|-------------------------------------------|
+| ----------------------- | ------- | ----------------------------------------- |
 | `javafx-maven-plugin`   | 0.0.8   | `mvn javafx:run` — lancement de l'app GUI |
 | `maven-shade-plugin`    | 3.6.2   | Fat JAR avec toutes les dependances       |
 | `maven-surefire-plugin` | 3.5.6   | Execution des tests unitaires             |
@@ -227,15 +229,24 @@ src/main/resources/
 
 ## Authentification (SSO)
 
-L'application utilise un systeme **Single Sign-On** (SSO) partage avec l'application web Connected Neighbours :
+L'application utilise un systeme **Single Sign-On** (SSO) partage avec l'application web Connected Neighbours,
+selon le flow **authorization code + PKCE** des applications natives (RFC 8252). C'est un client **public** :
+distribue en jar, il ne detient aucun secret client.
 
-1. **Premier lancement** : le navigateur du systeme s'ouvre sur la page de login de l'auth-service (port 3001 par
-   defaut).
-2. **Callback loopback** : apres authentification, le serveur redirige vers un mini serveur HTTP local (
-   `CallbackServer`) qui capture le JWT.
-3. **Token JWT** : l'access token est conserve **en memoire uniquement** (jamais persiste sur disque). Il est joint a
+1. **Premier lancement** : `CallbackServer` ecoute sur `127.0.0.1` (port attribue par l'OS), puis le navigateur
+   systeme s'ouvre sur `/auth/desktop/authorize` de l'auth-service (port 3001 par defaut) avec un `state` et un
+   `code_challenge` S256.
+2. **Callback loopback** : apres authentification, le serveur redirige vers le mini serveur HTTP local avec un
+   **code a usage unique** — jamais le token. Le `state` est verifie avant toute utilisation du code.
+3. **Echange** : le code est echange hors navigateur (`POST /auth/desktop/token`) contre l'access token, avec le
+   `code_verifier` PKCE. Le token ne transite donc par aucune URL.
+4. **Verification** : le token est verifie (signature RS256, issuer, audience) via les cles JWKS de l'auth-service
+   (`JwtVerifier`) **avant** d'etre utilise, puis son claim `role` est controle.
+5. **Token JWT** : l'access token est conserve **en memoire uniquement** (jamais persiste sur disque). Il est joint a
    chaque requete HTTP via le header `Authorization: Bearer`.
-4. **Verification** : le token est verifie localement via les cles JWKS RSA exposees par l'auth-service (`JwtVerifier`).
+
+> **Reserve aux administrateurs.** Seuls les comptes `admin` / `superAdmin` obtiennent un code : l'auth-service
+> refuse les autres au `/authorize`, et l'application refait le controle sur le claim `role`.
 
 > L'URL de l'auth-service est configurable dans l'ecran **Parametres** (`AuthConfig`, persiste via `java.util.prefs`).
 
@@ -253,7 +264,7 @@ L'application est concue pour fonctionner **integralement hors-ligne** :
 ### Comportement au lancement (GUI)
 
 | Scenario                                              | Comportement                                                     |
-|-------------------------------------------------------|------------------------------------------------------------------|
+| ----------------------------------------------------- | ---------------------------------------------------------------- |
 | 1er lancement (pas de user memorise ou H2 vide)       | Login SSO via navigateur, puis memorisation du user              |
 | Lancements suivants (user memorise + donnees locales) | Dashboard direct, hors-ligne, sans ouvrir le navigateur          |
 | Bouton "Deconnexion"                                  | Efface le user memorise ; prochain demarrage exigera un re-login |
@@ -275,7 +286,7 @@ La synchronisation est geree par `SyncService` :
 ### Etats de synchronisation (`SyncStatus`)
 
 | Etat            | Description                                        |
-|-----------------|----------------------------------------------------|
+| --------------- | -------------------------------------------------- |
 | `OFFLINE`       | Pas de connexion reseau                            |
 | `SYNCING`       | Synchronisation en cours                           |
 | `SUCCESS`       | Derniere synchronisation reussie                   |
@@ -342,7 +353,7 @@ mvn test
 ```
 
 | Fichier de test               | Couverture                 |
-|-------------------------------|----------------------------|
+| ----------------------------- | -------------------------- |
 | `ApiClientTest.java`          | Client HTTP (OkHttp)       |
 | `SyncServiceTest.java`        | Service de synchronisation |
 | `IncidentRepositoryTest.java` | CRUD incidents en H2       |
@@ -361,8 +372,8 @@ mvn test
 - `IncidentService` (CRUD, validation, gestion du flag synced)
 - `SyncService` (push/pull, scheduler, detection connexion, resolution de conflits Last-Write-Wins)
 - Dashboard (`dashboard.fxml` + `DashboardController`) — cartes stats, tableau incidents, alertes, barre de sync
-- Ecran Incidents (`incidents.fxml` + `IncidentController`, 609 lignes) — `TableView` complete avec 10 colonnes, filtres
-  (statut, categorie), double-clic edition, creation, historique
+- Ecran Incidents (`incidents.fxml` + `IncidentController`, 609 lignes) — `TableView` complete avec 10 colonnes,
+  filtres (statut, categorie), double-clic edition, creation, historique
 - Ecran Statistiques (`statistics.fxml` + `StatisticsController`, 129 lignes) — 5 cartes metriques (utilisateurs,
   annonces, evenements, votes, incidents), 2 PieCharts (incidents par statut et par categorie), `StatisticRepository`
   consomme
@@ -407,4 +418,3 @@ mvn test
 - **Injection** : `AppContext` est le point d'injection central — les controleurs le recoivent en parametre.
 - **Pattern MVC** : vues en FXML, logique dans les controleurs, donnees dans les modeles.
 - **Styles CSS** : utiliser des `styleClass` dans les FXML, jamais de styles inline.
-

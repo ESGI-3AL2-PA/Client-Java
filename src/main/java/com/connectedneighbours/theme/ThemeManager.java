@@ -18,8 +18,8 @@ import java.util.logging.Logger;
  * <ul>
  *   <li>persister le thème courant dans les {@link Preferences} utilisateur
  *       (clé {@code theme.id}) ;</li>
- *   <li>exposer la liste des thèmes disponibles = 3 thèmes built-in
- *       ({@link Theme#LIGHT}, {@link Theme#DARK}, {@link Theme#DEFAULT})
+ *   <li>exposer la liste des thèmes disponibles = 2 thèmes built-in
+ *       ({@link Theme#LIGHT}, {@link Theme#DARK})
  *       + les thèmes personnalisés scannés dans {@code ./themes/*.css} ;</li>
  *   <li>appliquer le thème courant sur une {@link Scene} en remplaçant
  *       dynamiquement la feuille de style.</li>
@@ -31,8 +31,8 @@ import java.util.logging.Logger;
  * pour la BDD H2). Le dossier est créé automatiquement au premier appel de
  * {@link #getThemesDir()}. Le nom affiché est dérivé du nom du fichier sans
  * extension. Un fichier dont le nom (sans extension) collide avec un id
- * built-in ({@code light}, {@code dark}, {@code default}) est ignoré pour
- * éviter toute ambiguïté.
+ * built-in ({@code light}, {@code dark}) est ignoré pour éviter toute
+ * ambiguïté.
  *
  * <h2>Application à chaud</h2>
  * {@link #applyTheme(Scene)} retire les feuilles de thème précédemment
@@ -90,7 +90,7 @@ public final class ThemeManager {
     //  Liste des thèmes
 
     /**
-     * @return liste non modifiable des thèmes disponibles : les 3 built-in
+     * @return liste non modifiable des thèmes disponibles : les 2 built-in
      *         puis les thèmes personnalisés.
      */
     public static List<Theme> getAvailableThemes() {

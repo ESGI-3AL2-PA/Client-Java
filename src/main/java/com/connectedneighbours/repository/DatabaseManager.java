@@ -75,8 +75,52 @@ public class DatabaseManager {
                     name VARCHAR(200) NOT NULL
                 )
             """;
-    private static final String SQL_USERS_ADD_DISTRICT_ID =
-            "ALTER TABLE users ADD COLUMN IF NOT EXISTS districtId VARCHAR(36)";
+    /**
+     * File d'attente des écritures locales à pousser (§9.1 du design offline-sync).
+     * Une ligne <em>par enregistrement sale</em> : la table est déjà l'état compacté,
+     * d'où la contrainte d'unicité (entity, record_id).
+     */
+    private static final String SQL_PENDING_CHANGES = """
+                CREATE TABLE IF NOT EXISTS pending_changes (
+                    id              BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                    entity          VARCHAR(64)  NOT NULL,
+                    record_id       VARCHAR(36)  NOT NULL,
+                    operation       VARCHAR(8)   NOT NULL,
+                    mongo_id        VARCHAR(36),
+                    payload         CLOB,
+                    base_updated_at VARCHAR(40),
+                    occurred_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT uq_pending UNIQUE (entity, record_id)
+                )
+            """;
+    /**
+     * Migrations appliquées à chaque ouverture de connexion, dans l'ordre.
+     * Toutes doivent être idempotentes (IF NOT EXISTS).
+     */
+    private static final String[] MIGRATIONS = {
+            SQL_INCIDENTS,
+            SQL_USERS,
+            SQL_STATISTICS,
+            SQL_SYNC_LOG,
+            SQL_ALERTS,
+            SQL_DISTRICTS,
+            SQL_PENDING_CHANGES,
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS districtId VARCHAR(36)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS address VARCHAR(300)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS synced BOOLEAN DEFAULT FALSE",
+            // Identité serveur + jeton de concurrence optimiste (§8, §9.1).
+            // mongo_id reste NULL tant que le serveur n'a pas acquitté l'INSERT.
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS mongo_id VARCHAR(36)",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS base_updated_at VARCHAR(40)",
+            "ALTER TABLE incidents ADD COLUMN IF NOT EXISTS mongo_id VARCHAR(36)",
+            "ALTER TABLE incidents ADD COLUMN IF NOT EXISTS base_updated_at VARCHAR(40)",
+            "ALTER TABLE districts ADD COLUMN IF NOT EXISTS mongo_id VARCHAR(36)",
+            // H2 considère les NULL comme distincts : plusieurs lignes locales
+            // pas encore acquittées peuvent coexister sous un index unique.
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_users_mongo_id ON users(mongo_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_incidents_mongo_id ON incidents(mongo_id)",
+            "CREATE UNIQUE INDEX IF NOT EXISTS uq_districts_mongo_id ON districts(mongo_id)",
+    };
     private static Connection connection;
 
     public DatabaseManager() {
@@ -102,14 +146,18 @@ public class DatabaseManager {
     }
 
     private static void initSchema() throws SQLException {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate(SQL_INCIDENTS);
-            stmt.executeUpdate(SQL_USERS);
-            stmt.executeUpdate(SQL_STATISTICS);
-            stmt.executeUpdate(SQL_SYNC_LOG);
-            stmt.executeUpdate(SQL_ALERTS);
-            stmt.executeUpdate(SQL_DISTRICTS);
-            stmt.executeUpdate(SQL_USERS_ADD_DISTRICT_ID);
+        initSchema(connection);
+    }
+
+    /**
+     * Applique le schéma et les migrations sur la connexion donnée.
+     * Exposé pour les tests, qui travaillent sur une base H2 en mémoire.
+     */
+    public static void initSchema(Connection target) throws SQLException {
+        try (Statement stmt = target.createStatement()) {
+            for (String migration : MIGRATIONS) {
+                stmt.executeUpdate(migration);
+            }
         }
     }
 }

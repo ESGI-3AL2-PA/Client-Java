@@ -88,6 +88,8 @@
             <Label fx:id="syncStatusLabel" text="%common.sync.offline" styleClass="status-bar-label"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="lastSyncLabel" styleClass="status-bar-secondary"/>
+            <Button fx:id="conflictsButton" text="Conflits" visible="false" managed="false"
+                    onAction="#onConflictsClick" styleClass="button-ghost"/>
             <Button fx:id="syncNowButton" text="%common.sync.button"
                     onAction="#onSyncNowClick" styleClass="button-ghost"/>
         </HBox>
