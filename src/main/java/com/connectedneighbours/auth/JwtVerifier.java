@@ -2,7 +2,7 @@ package com.connectedneighbours.auth;
 
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkProvider;
-import com.auth0.jwk.UrlJwkProvider;
+import com.auth0.jwk.JwkProviderBuilder;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
@@ -10,21 +10,31 @@ import com.connectedneighbours.config.AuthConfig;
 
 import java.net.URL;
 import java.security.interfaces.RSAPublicKey;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Validation locale des access tokens JWT (RS256) via le endpoint JWKS
- * du auth-service. Aucun appel réseau n'est fait par requête API : la
- * clé publique correspondant au kid est récupérée une fois puis cachée.
+ * du auth-service.
+ *
+ * <p>Le cache des clés a une durée de vie bornée. Un cache par {@code kid} sans
+ * expiration — ce qu'utilisait la version précédente — ne repère jamais une
+ * rotation de clé : le processus reste sur l'ancienne clé publique jusqu'à son
+ * redémarrage, soit, pour une application de bureau, jusqu'à ce que
+ * l'utilisateur relance le logiciel.</p>
  */
 public class JwtVerifier {
 
+    /** Marge d'horloge acceptée sur exp/iat, alignée sur celle de {@code isExpired}. */
+    private static final long LEEWAY_SECONDS = 30;
+
     private final JwkProvider jwkProvider;
-    private final ConcurrentHashMap<String, RSAPublicKey> keyCache = new ConcurrentHashMap<>();
 
     public JwtVerifier() {
         try {
-            this.jwkProvider = new UrlJwkProvider(new URL(AuthConfig.getJwksUrl()));
+            this.jwkProvider = new JwkProviderBuilder(new URL(AuthConfig.getJwksUrl()))
+                    .cached(5, 10, TimeUnit.MINUTES)
+                    .rateLimited(10, 1, TimeUnit.MINUTES)
+                    .build();
         } catch (Exception e) {
             throw new IllegalStateException("JWKS URL invalide: " + AuthConfig.getJwksUrl(), e);
         }
@@ -41,11 +51,12 @@ public class JwtVerifier {
             if (kid == null) {
                 throw new IllegalStateException("JWT sans kid");
             }
-            RSAPublicKey publicKey = keyCache.computeIfAbsent(kid, this::loadKey);
+            RSAPublicKey publicKey = loadKey(kid);
             Algorithm algorithm = Algorithm.RSA256(publicKey, null);
             return JWT.require(algorithm)
                     .withIssuer(AuthConfig.JWT_ISSUER)
                     .withAudience(AuthConfig.JWT_AUDIENCE)
+                    .acceptLeeway(LEEWAY_SECONDS)
                     .build()
                     .verify(token);
         } catch (IllegalStateException e) {
