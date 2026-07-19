@@ -23,6 +23,10 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +34,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class LocalCalendarPlugin implements Plugin {
+
+    /**
+     * Même format que l'écran Incidents (dd/MM/yyyy HH:mm).
+     */
+    private static final DateTimeFormatter EVENT_DATE_FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     private static final Logger LOG = Logger.getLogger(LocalCalendarPlugin.class.getName());
     private static final ObjectMapper MAPPER = JacksonConfig.get();
@@ -76,7 +86,7 @@ public class LocalCalendarPlugin implements Plugin {
             TableView<JsonNode> table = new TableView<>();
             table.setPrefHeight(350);
 
-            TableColumn<JsonNode, String> dateCol = col("Date", "eventDate");
+            TableColumn<JsonNode, String> dateCol = col("Date", "eventDate", LocalCalendarPlugin::formatEventDate);
             dateCol.setPrefWidth(170);
             TableColumn<JsonNode, String> titleCol = col("Titre", "title");
             titleCol.setPrefWidth(220);
@@ -128,7 +138,7 @@ public class LocalCalendarPlugin implements Plugin {
                 detailMeta.setText(String.format("Lieu : %s  |  Statut : %s  |  Date : %s",
                         sel.has("location") ? sel.get("location").asText() : "-",
                         sel.has("status") ? sel.get("status").asText() : "-",
-                        sel.has("eventDate") ? sel.get("eventDate").asText() : "-"));
+                        sel.has("eventDate") ? formatEventDate(sel.get("eventDate").asText()) : "-"));
                 detailDesc.setText(sel.has("description") ? sel.get("description").asText() : "");
                 detailPanel.setVisible(true);
             });
@@ -200,13 +210,36 @@ public class LocalCalendarPlugin implements Plugin {
     }
 
     private static TableColumn<JsonNode, String> col(String header, String field) {
+        return col(header, field, java.util.function.UnaryOperator.identity());
+    }
+
+    private static TableColumn<JsonNode, String> col(String header, String field,
+                                                     java.util.function.UnaryOperator<String> render) {
         TableColumn<JsonNode, String> c = new TableColumn<>(header);
         c.setCellValueFactory(d -> {
             JsonNode n = d.getValue();
             String val = (n != null && n.has(field) && !n.get(field).isNull())
                     ? n.get(field).asText() : "";
-            return new SimpleStringProperty(val);
+            return new SimpleStringProperty(val.isEmpty() ? val : render.apply(val));
         });
         return c;
+    }
+
+    /**
+     * L'api renvoie {@code eventDate} en ISO-8601 UTC. Le brut
+     * ({@code 2026-07-20T13:09:22.141Z}) s'affichait tel quel ici alors que
+     * l'écran Incidents formate déjà ses dates — même donnée, deux rendus.
+     *
+     * <p>Le tri se fait sur la valeur ISO brute (cf. {@code sortByDate}), donc
+     * le formatage n'affecte que l'affichage. Une valeur non parsable est
+     * rendue telle quelle plutôt que masquée.</p>
+     */
+    static String formatEventDate(String iso) {
+        if (iso == null || iso.isBlank()) return "";
+        try {
+            return EVENT_DATE_FMT.format(Instant.parse(iso).atZone(ZoneId.systemDefault()));
+        } catch (DateTimeParseException e) {
+            return iso;
+        }
     }
 }
