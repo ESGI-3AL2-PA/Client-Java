@@ -88,11 +88,17 @@ public final class Theme {
 
     /**
      * Libellé affichable, traduit dynamiquement selon la langue courante
-     * pour les thèmes built-in (clé {@code theme.<id>.name}). Les thèmes
-     * personnalisés conservent leur libellé dérivé du nom de fichier.
+     * pour les deux thèmes built-in connus ({@link #ID_LIGHT}, {@link #ID_DARK},
+     * clés {@code theme.light.name} / {@code theme.dark.name}). Tout autre
+     * thème (personnalisé, ou construit via {@link #fromClasspath} avec un id
+     * arbitraire) conserve le libellé fourni à la construction.
      */
     public String getDisplayName() {
-        return builtin ? I18nManager.tr("theme." + id + ".name") : displayName;
+        return switch (id) {
+            case ID_LIGHT -> I18nManager.tr("theme.light.name");
+            case ID_DARK -> I18nManager.tr("theme.dark.name");
+            default -> displayName;
+        };
     }
 
     /**
