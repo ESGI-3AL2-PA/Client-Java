@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/21"
+            fx:controller="com.connectedneighbours.controller.ConflictController"
+            styleClass="app-bg">
+
+    <!-- ══════════════ HEADER ══════════════ -->
+    <top>
+        <HBox alignment="CENTER_LEFT" spacing="12" styleClass="header">
+            <padding><Insets top="14" right="20" bottom="14" left="20"/></padding>
+
+            <Label text="Conflits de synchronisation" styleClass="header-title"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Button text="Rafraîchir" onAction="#onRefreshClick" styleClass="button-ghost"/>
+            <Button text="Fermer" onAction="#onCloseClick" styleClass="button-ghost"/>
+        </HBox>
+    </top>
+
+    <!-- ══════════════ CONTENU ══════════════ -->
+    <center>
+        <VBox spacing="16">
+            <padding><Insets top="20" right="20" bottom="16" left="20"/></padding>
+
+            <Label fx:id="emptyLabel" styleClass="card-label"/>
+
+            <!-- Les conflits que cette installation a levés -->
+            <TableView fx:id="conflictsTable" prefHeight="200" VBox.vgrow="SOMETIMES">
+                <columns>
+                    <TableColumn fx:id="colEntity" text="Entité" prefWidth="120"/>
+                    <TableColumn fx:id="colType" text="Type" prefWidth="200"/>
+                    <TableColumn fx:id="colRecord" text="Enregistrement" prefWidth="140"/>
+                    <TableColumn fx:id="colDetectedAt" text="Détecté le" prefWidth="220"/>
+                </columns>
+            </TableView>
+
+            <Label text="Comparaison champ par champ" styleClass="card-label"/>
+
+            <!-- La fusion : un arbitrage par champ divergent -->
+            <TableView fx:id="fieldsTable" prefHeight="240" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colField" text="Champ" prefWidth="160"/>
+                    <TableColumn fx:id="colLocalValue" text="Ma version" prefWidth="240"/>
+                    <TableColumn fx:id="colServerValue" text="Serveur" prefWidth="240"/>
+                    <TableColumn fx:id="colChoice" text="Garder" prefWidth="140"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+
+    <!-- ══════════════ ACTIONS ══════════════ -->
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10" styleClass="status-bar">
+            <padding><Insets top="12" right="20" bottom="12" left="20"/></padding>
+
+            <Label text="La ligne locale sera nettoyée à la prochaine synchronisation."
+                   styleClass="status-bar-secondary"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Button fx:id="keepLocalButton" text="Garder ma version"
+                    onAction="#onKeepLocalClick" styleClass="button-ghost"/>
+            <Button fx:id="keepServerButton" text="Garder le serveur"
+                    onAction="#onKeepServerClick" styleClass="button-ghost"/>
+            <Button fx:id="mergeButton" text="Appliquer la fusion"
+                    onAction="#onMergeClick" styleClass="button-primary"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

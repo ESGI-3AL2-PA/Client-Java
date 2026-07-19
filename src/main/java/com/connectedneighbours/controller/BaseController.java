@@ -2,6 +2,7 @@ package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
+import com.connectedneighbours.service.ConflictService;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.service.SyncStatus;
 import javafx.fxml.FXML;
@@ -37,6 +38,11 @@ public class BaseController {
     protected Label lastSyncLabel;
     @FXML
     protected Button syncNowButton;
+    /**
+     * Badge des conflits. Masqué tant que le push n'en a levé aucun.
+     */
+    @FXML
+    protected Button conflictsButton;
 
     // Dépendances
     protected AppContext appContext;
@@ -81,8 +87,84 @@ public class BaseController {
      * dépendances injectées.
      */
     protected void setupSync() {
+        if (conflictsButton != null) {
+            conflictsButton.setVisible(false);
+            conflictsButton.setManaged(false);
+        }
         if (syncService != null) {
             syncService.setStatusListener(this::updateSyncUI);
+            syncService.setConflictListener(this::showConflictBadge);
+            syncService.setRejectionListener(this::showRejections);
+        }
+    }
+
+    /**
+     * Lève le badge quand un push a été mis en quarantaine. Il reste affiché
+     * tant que l'opérateur n'a pas traité les conflits : c'est le seul endroit
+     * où ils peuvent l'être.
+     */
+    protected void showConflictBadge(int count) {
+        if (conflictsButton == null || count <= 0) {
+            return;
+        }
+        conflictsButton.setVisible(true);
+        conflictsButton.setManaged(true);
+        conflictsButton.setText("Conflits (" + count + ")");
+    }
+
+    /**
+     * Les refus d'autorisation n'ouvrent aucun écran : il n'y a rien à
+     * arbitrer, la modification a été abandonnée et l'opérateur doit le savoir.
+     */
+    protected void showRejections(java.util.List<String> messages) {
+        if (messages == null || messages.isEmpty()) {
+            return;
+        }
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Modifications refusées");
+        alert.setHeaderText("Ces modifications n'ont pas pu être synchronisées et ont été abandonnées.");
+        alert.setContentText(String.join("\n", messages));
+        alert.show();
+    }
+
+    /**
+     * Ouvre l'écran de résolution des conflits.
+     * Méthode {@code @FXML} référencée par {@code onAction="#onConflictsClick"}.
+     */
+    @FXML
+    public void onConflictsClick() {
+        if (appContext == null) {
+            return;
+        }
+        try {
+            javafx.fxml.FXMLLoader loader = new javafx.fxml.FXMLLoader(
+                    getClass().getResource("/com/connectedneighbours/fxml/conflicts.fxml")
+            );
+            ConflictService conflictService = new ConflictService(appContext.getSyncApiClient());
+            loader.setControllerFactory(cls -> {
+                if (cls == ConflictController.class) {
+                    return new ConflictController(conflictService);
+                }
+                try {
+                    return cls.getDeclaredConstructors()[0].newInstance();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            javafx.scene.Parent root = loader.load();
+
+            Stage stage = new Stage();
+            stage.setTitle("Conflits — Connected Neighbours");
+            stage.initOwner(conflictsButton.getScene().getWindow());
+            stage.initModality(javafx.stage.Modality.WINDOW_MODAL);
+
+            javafx.scene.Scene scene = new javafx.scene.Scene(root, 1000, 700);
+            com.connectedneighbours.theme.ThemeManager.applyTheme(scene);
+
+            stage.setScene(scene);
+            stage.showAndWait();
+        } catch (Exception e) {
+            showError("Impossible d'ouvrir l'écran des conflits : " + e.getMessage());
         }
     }
 

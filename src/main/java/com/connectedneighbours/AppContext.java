@@ -5,6 +5,7 @@ import com.connectedneighbours.auth.exception.TokenUnavailableException;
 import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.ApiClient;
+import com.connectedneighbours.repository.SyncApiClient;
 
 /**
  * Contexte de l'app partagé : (SsoAuthService, ApiClient,
@@ -15,11 +16,15 @@ public class AppContext {
 
     private final SsoAuthService authService;
     private final ApiClient apiClient;
+    private final SyncApiClient syncApiClient;
     private volatile User currentUser;
 
     public AppContext() {
         this.authService = new SsoAuthService();
         this.apiClient = new ApiClient(this::supplyAccessToken);
+        // Même token que l'ApiClient : les routes de sync sont des routes api
+        // ordinaires, authentifiées par le JWT de l'opérateur.
+        this.syncApiClient = new SyncApiClient(this::supplyAccessToken);
     }
 
     /**
@@ -37,6 +42,10 @@ public class AppContext {
 
     public ApiClient getApiClient() {
         return apiClient;
+    }
+
+    public SyncApiClient getSyncApiClient() {
+        return syncApiClient;
     }
 
     public User getCurrentUser() {

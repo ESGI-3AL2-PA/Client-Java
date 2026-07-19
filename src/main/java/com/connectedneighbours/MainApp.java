@@ -193,7 +193,7 @@ public class MainApp extends Application {
      */
     private void ensureSyncService() {
         if (syncService == null) {
-            syncService = new SyncService(appContext.getApiClient());
+            syncService = new SyncService(appContext.getSyncApiClient());
             syncService.start();
         }
     }

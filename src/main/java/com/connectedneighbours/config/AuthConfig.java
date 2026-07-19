@@ -5,9 +5,10 @@ import java.util.prefs.Preferences;
 
 public class AuthConfig {
 
-    public static final String DEFAULT_SCHEME = "http";
-    public static final String DEFAULT_HOST = "localhost";
-    public static final int DEFAULT_PORT = 3001;
+    public static final String DEFAULT_SCHEME = BuildConfig.authScheme();
+    public static final String DEFAULT_HOST = BuildConfig.authHost();
+    /** -1 => URL sans suffixe ":port" (cas HTTPS derrière Caddy). */
+    public static final int DEFAULT_PORT = BuildConfig.authPort();
     public static final String JWT_ISSUER = "auth-service";
     public static final String JWT_AUDIENCE = "api";
     public static final String JWKS_PATH = "/.well-known/jwks.json";
@@ -92,7 +93,8 @@ public class AuthConfig {
 
     public static void setPort(int port) {
         if (port <= 0 || port > 65535) {
-            PREFS.put(KEY_PORT, String.valueOf(DEFAULT_PORT));
+            // Vide quand le build n'impose pas de port : URL sans suffixe ":port".
+            PREFS.put(KEY_PORT, DEFAULT_PORT > 0 ? String.valueOf(DEFAULT_PORT) : "");
             return;
         }
         PREFS.put(KEY_PORT, String.valueOf(port));

@@ -1,7 +1,9 @@
 package com.connectedneighbours.service;
 
 import com.connectedneighbours.model.Incident;
+import com.connectedneighbours.model.PendingChange;
 import com.connectedneighbours.repository.IncidentRepository;
+import com.connectedneighbours.repository.PendingChangesRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -14,12 +16,69 @@ import static org.mockito.Mockito.*;
 class IncidentServiceTest {
 
     private IncidentRepository repository;
+    private PendingChangesRepository pendingRepo;
     private IncidentService service;
 
     @BeforeEach
     void setUp() {
         repository = mock(IncidentRepository.class);
-        service = new IncidentService(repository);
+        pendingRepo = mock(PendingChangesRepository.class);
+        // Par défaut : jamais acquitté par le serveur. Les tests qui portent
+        // sur un enregistrement déjà synchronisé le redéfinissent.
+        when(pendingRepo.findRecordSyncState(anyString(), anyString()))
+                .thenReturn(new PendingChangesRepository.RecordSyncState(null, null));
+        service = new IncidentService(repository, pendingRepo);
+    }
+
+    @Test
+    void createIncident_queuesInsertForPush() {
+        Incident created = service.createIncident("voirie", "nid de poule", "u1");
+
+        verify(repository).save(created);
+        verify(pendingRepo).upsert(
+                eq("incident"), eq(created.getId()), eq(PendingChange.INSERT),
+                isNull(), anyString(), isNull());
+    }
+
+    @Test
+    void updateIncident_neverAcknowledged_staysAnInsert() {
+        Incident incident = new Incident("i1", "r1", "d1", "cat", "desc");
+        when(pendingRepo.findRecordSyncState("incident", "i1"))
+                .thenReturn(new PendingChangesRepository.RecordSyncState(null, null));
+
+        service.updateIncident(incident);
+
+        // Sans mongo_id, le serveur ignore encore cet incident : le pousser en
+        // UPDATE n'aurait rien à viser.
+        verify(pendingRepo).upsert(
+                eq("incident"), eq("i1"), eq(PendingChange.INSERT),
+                isNull(), anyString(), isNull());
+    }
+
+    @Test
+    void updateIncident_alreadySynced_queuesUpdateWithBaseToken() {
+        Incident incident = new Incident("i1", "r1", "d1", "cat", "desc");
+        when(pendingRepo.findRecordSyncState("incident", "i1"))
+                .thenReturn(new PendingChangesRepository.RecordSyncState("mongo-1", "2026-07-17T09:00:00.000Z"));
+
+        service.updateIncident(incident);
+
+        verify(pendingRepo).upsert(
+                eq("incident"), eq("i1"), eq(PendingChange.UPDATE),
+                eq("mongo-1"), anyString(), eq("2026-07-17T09:00:00.000Z"));
+    }
+
+    @Test
+    void deleteIncident_queuesDeleteWithoutPayload() {
+        when(pendingRepo.findRecordSyncState("incident", "i1"))
+                .thenReturn(new PendingChangesRepository.RecordSyncState("mongo-1", "base"));
+
+        service.deleteIncident("i1");
+
+        verify(repository).delete("i1");
+        verify(pendingRepo).upsert(
+                eq("incident"), eq("i1"), eq(PendingChange.DELETE),
+                eq("mongo-1"), isNull(), eq("base"));
     }
 
     @Test

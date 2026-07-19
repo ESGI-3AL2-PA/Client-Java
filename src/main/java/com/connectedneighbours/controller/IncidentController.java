@@ -331,74 +331,9 @@ public class IncidentController extends BaseController {
 
     @FXML
     public void onNewIncidentClick() {
-        Dialog<Incident> dialog = new Dialog<>();
-        dialog.setTitle("Nouvel incident");
-        dialog.setHeaderText("Créer un nouvel incident");
-        dialog.initOwner(incidentsTable.getScene().getWindow());
-        dialog.initModality(Modality.WINDOW_MODAL);
-
-        // Boutons
-        ButtonType createType = new ButtonType("Créer", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(createType, ButtonType.CANCEL);
-
-        // Formulaire
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(12);
-        grid.setPadding(new Insets(20, 24, 10, 24));
-
-        TextField categoryField = new TextField();
-        categoryField.setPromptText("Ex: Bruit, Voirie, Propreté…");
-        categoryField.setPrefWidth(300);
-
-        TextArea descriptionField = new TextArea();
-        descriptionField.setPromptText("Description de l'incident…");
-        descriptionField.setPrefRowCount(4);
-        descriptionField.setWrapText(true);
-
-        grid.add(new Label("Catégorie *"), 0, 0);
-        grid.add(categoryField, 1, 0);
-        grid.add(new Label("Description *"), 0, 1);
-        grid.add(descriptionField, 1, 1);
-
-        dialog.getDialogPane().setContent(grid);
-
-        // Validation : désactiver le bouton Créer si champs vides
-        dialog.getDialogPane().lookupButton(createType).setDisable(true);
-        Runnable validate = () -> {
-            boolean valid = !categoryField.getText().isBlank()
-                    && !descriptionField.getText().isBlank();
-            dialog.getDialogPane().lookupButton(createType).setDisable(!valid);
-        };
-        categoryField.textProperty().addListener((obs, o, n) -> validate.run());
-        descriptionField.textProperty().addListener((obs, o, n) -> validate.run());
-
-        // Résultat
-        dialog.setResultConverter(bt -> {
-            if (bt == createType) {
-                String reporterId = appContext != null && appContext.getCurrentUser() != null
-                        ? appContext.getCurrentUser().getId() : "admin";
-                try {
-                    return incidentService.createIncident(
-                            categoryField.getText().trim(),
-                            descriptionField.getText().trim(),
-                            reporterId
-                    );
-                } catch (Exception e) {
-                    showError("Erreur de création : " + e.getMessage());
-                    return null;
-                }
-            }
-            return null;
-        });
-
-        // Applique le thème courant à la scène du dialog (popup séparée).
-        dialog.setOnShown(e -> ThemeManager.applyTheme(dialog.getDialogPane().getScene()));
-
-        Optional<Incident> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() != null) {
-            loadData();
-        }
+        NewIncidentDialog
+                .show(incidentsTable.getScene().getWindow(), incidentService, appContext)
+                .ifPresent(created -> loadData());
     }
 
     //  Édition d'incident (dialog modale) 
@@ -414,7 +349,7 @@ public class IncidentController extends BaseController {
         dialog.initModality(Modality.WINDOW_MODAL);
 
         ButtonType saveType = new ButtonType("Enregistrer", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+        dialog.getDialogPane().getButtonTypes().addAll(saveType, Buttons.CANCEL);
 
         // Formulaire
         GridPane grid = new GridPane();

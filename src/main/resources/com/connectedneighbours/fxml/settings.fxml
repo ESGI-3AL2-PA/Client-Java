@@ -99,8 +99,8 @@
 					</HBox>
 				</GridPane>
 
-				<Label fx:id="themeHintLabel" styleClass="text-faint"
-					   text="Déposez vos fichiers .css dans le dossier ./themes/ puis cliquez sur Recharger."
+				<Label fx:id="themeHintLabel" styleClass="text-faint" maxWidth="620"
+					   text="Le thème s'applique immédiatement. « Recharger » re-scanne le dossier ./themes/."
 					   wrapText="true"/>
 			</VBox>
 

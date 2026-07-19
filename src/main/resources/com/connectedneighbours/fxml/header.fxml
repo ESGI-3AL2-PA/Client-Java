@@ -24,8 +24,8 @@
             onAction="#onDashboardClick" styleClass="nav-button"/>
     <Button fx:id="btnIncidents" text="Incidents"
             onAction="#onIncidentsClick" styleClass="nav-button"/>
-    <Button fx:id="btnUsers" text="Utilisateurs"
-            onAction="#onUsersClick" styleClass="nav-button"/>
+    <!-- Pas de onAction : désactivé par HeaderController#disableUsersButton. -->
+    <Button fx:id="btnUsers" text="Utilisateurs" styleClass="nav-button"/>
     <Button fx:id="btnStatistics" text="Statistiques"
             onAction="#onStatisticsClick" styleClass="nav-button"/>
     <MenuButton fx:id="btnPlugins" text="Plugins" styleClass="nav-button">
