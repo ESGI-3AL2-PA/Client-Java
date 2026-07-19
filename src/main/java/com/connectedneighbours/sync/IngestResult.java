@@ -14,11 +14,16 @@ import java.util.List;
  *   <li>{@code conflicts} — mis en quarantaine, rien n'a été écrit. On
  *       <em>garde</em> la ligne en attente (l'édition locale n'est pas perdue)
  *       et on lève le badge de conflit.</li>
- *   <li>{@code rejected} — refusé pour une raison d'autorisation
- *       (hors-district, entité en lecture seule). Ce n'est pas un conflit : on
+ *   <li>{@code rejected} — refusé fermement. Ce n'est pas un conflit : on
  *       <em>supprime</em> la ligne et on remonte l'erreur, puisque rejouer ne
  *       pourra jamais réussir.</li>
  * </ul>
+ *
+ * <p><b>Comptabilité totale.</b> Chaque id soumis revient dans
+ * <em>exactement une</em> de ces trois listes — jamais zéro, jamais deux. Le
+ * cycle de vie des lignes en attente s'appuie sur cette garantie ; un id
+ * manquant laisserait sa ligne bloquée pour toujours, ce que
+ * {@code SyncService} trace comme un bug serveur.</p>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class IngestResult {
@@ -137,8 +142,10 @@ public class IngestResult {
     }
 
     /**
-     * Un événement refusé. {@code reason} vaut aujourd'hui
-     * {@code out-of-district} ou {@code read-only-entity}.
+     * Un événement refusé. {@code reason} vaut {@code out-of-district},
+     * {@code read-only-entity} ou {@code unprocessable} (structurellement
+     * inapplicable — un UPDATE/DELETE sans cible côté serveur). Les trois se
+     * traitent de la même façon : la ligne est lâchée, jamais rejouée.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class RejectedEvent {

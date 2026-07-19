@@ -28,8 +28,10 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -260,13 +262,15 @@ public class SyncService {
             if (change == null) {
                 continue;
             }
-            // Refus d'autorisation, pas un conflit de données : le rejouer ne
-            // pourra jamais aboutir. On lâche la ligne et on le dit.
+            // Refus ferme du serveur, quelle qu'en soit la raison : le rejouer
+            // ne pourra jamais aboutir. On lâche la ligne et on le dit.
             pendingRepo.delete(change.getEntity(), change.getRecordId());
             String message = describeRejection(change, rejected.getReason());
             rejections.add(message);
             LOGGER.log(Level.WARNING, message);
         }
+
+        warnOnUnaccountedEvents(byId, result);
 
         pendingConflictCount = result.getConflicts().size();
         if (!result.getConflicts().isEmpty()) {
@@ -304,10 +308,37 @@ public class SyncService {
         }
     }
 
+    /**
+     * Contrôle de l'invariant de comptabilité totale : chaque id soumis doit
+     * revenir dans <em>exactement une</em> des trois listes. Un id qui n'en
+     * revient dans aucune laisserait sa ligne en attente bloquée, re-poussée à
+     * chaque cycle sans jamais aboutir.
+     *
+     * <p>On se contente de le tracer bruyamment : c'est un bug serveur, et
+     * bâtir une reprise ici masquerait le symptôme au lieu de le révéler.</p>
+     */
+    private void warnOnUnaccountedEvents(Map<Long, PendingChange> byId, IngestResult result) {
+        Set<Long> accounted = new HashSet<>();
+        result.getApplied().forEach(event -> accounted.add(event.getId()));
+        result.getConflicts().forEach(event -> accounted.add(event.getId()));
+        result.getRejected().forEach(event -> accounted.add(event.getId()));
+
+        for (Map.Entry<Long, PendingChange> entry : byId.entrySet()) {
+            if (!accounted.contains(entry.getKey())) {
+                PendingChange change = entry.getValue();
+                LOGGER.log(Level.WARNING,
+                        "Événement {0} ({1}/{2}) absent de l''acquittement : "
+                                + "sa ligne en attente reste bloquée (bug serveur)",
+                        new Object[]{entry.getKey(), change.getEntity(), change.getRecordId()});
+            }
+        }
+    }
+
     private String describeRejection(PendingChange change, String reason) {
         String label = switch (reason != null ? reason : "") {
             case "out-of-district" -> "hors de votre quartier";
             case "read-only-entity" -> "entité en lecture seule";
+            case "unprocessable" -> "impossible à appliquer côté serveur";
             default -> reason;
         };
         return "Modification refusée sur " + change.getEntity() + "/" + change.getRecordId()

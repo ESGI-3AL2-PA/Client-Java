@@ -51,10 +51,15 @@ class SyncServiceTest {
     private List<SyncStatus> statuses;
 
     private static PendingChange pending(long id, String operation, String mongoId, String baseUpdatedAt) {
+        return pending(id, "inc-1", operation, mongoId, baseUpdatedAt);
+    }
+
+    private static PendingChange pending(long id, String recordId, String operation,
+                                         String mongoId, String baseUpdatedAt) {
         PendingChange change = new PendingChange();
         change.setId(id);
         change.setEntity("incident");
-        change.setRecordId("inc-1");
+        change.setRecordId(recordId);
         change.setOperation(operation);
         change.setMongoId(mongoId);
         change.setPayload("{\"category\":\"voirie\"}");
@@ -242,6 +247,90 @@ class SyncServiceTest {
                 anyString(), anyString(), any(), any(), any());
         assertEquals(1, reported.size());
         assertTrue(reported.get(0).get(0).contains("hors de votre quartier"));
+    }
+
+    @Test
+    void push_rejectedAsUnprocessable_isDroppedLikeAnyOtherRefusal() throws Exception {
+        PendingChange change = pending(90L, PendingChange.UPDATE, null, "base");
+        when(pendingRepo.findBatch(anyInt())).thenReturn(List.of(change));
+
+        IngestResult result = new IngestResult();
+        result.setRejected(List.of(rejected(90L, "unprocessable")));
+        when(apiClient.ingest(any())).thenReturn(result);
+        when(apiClient.changes(anyLong(), anyInt())).thenReturn(List.of());
+
+        List<List<String>> reported = new ArrayList<>();
+        SyncService service = onlineService();
+        service.setRejectionListener(reported::add);
+
+        service.syncCycle();
+
+        verify(pendingRepo).delete("incident", "inc-1");
+        assertTrue(reported.get(0).get(0).contains("impossible à appliquer"));
+    }
+
+    @Test
+    void push_mixedBatch_settlesEachRowByItsOwnOutcome() throws Exception {
+        PendingChange ok = pending(1L, "inc-ok", PendingChange.INSERT, null, null);
+        PendingChange clashing = pending(2L, "inc-conflict", PendingChange.UPDATE, "mongo-2", "stale");
+        PendingChange refused = pending(3L, "inc-rejected", PendingChange.UPDATE, "mongo-3", "base");
+        when(pendingRepo.findBatch(anyInt())).thenReturn(List.of(ok, clashing, refused));
+
+        // Comptabilité totale : les trois ids soumis reviennent, chacun dans
+        // exactement une liste.
+        IngestResult result = new IngestResult();
+        result.setApplied(List.of(applied(1L, "mongo-1", "2026-07-18T10:00:00.123Z")));
+        result.setConflicts(List.of(conflict(2L, "c-uuid")));
+        result.setRejected(List.of(rejected(3L, "out-of-district")));
+        when(apiClient.ingest(any())).thenReturn(result);
+        when(apiClient.changes(anyLong(), anyInt())).thenReturn(List.of());
+
+        List<Integer> badges = new ArrayList<>();
+        List<List<String>> reported = new ArrayList<>();
+        SyncService service = onlineService();
+        service.setConflictListener(badges::add);
+        service.setRejectionListener(reported::add);
+
+        service.syncCycle();
+
+        // Appliqué → ligne purgée, jeton avancé depuis l'ack.
+        verify(pendingRepo).setRecordMongoId("incident", "inc-ok", "mongo-1");
+        verify(pendingRepo).advanceBaseAndClear(
+                "incident", "inc-ok", "mongo-1", "2026-07-18T10:00:00.123Z", SENT_AT);
+
+        // En conflit → ligne conservée, badge levé.
+        verify(pendingRepo, never()).delete("incident", "inc-conflict");
+        verify(pendingRepo, never()).advanceBaseAndClear(
+                eq("incident"), eq("inc-conflict"), any(), any(), any());
+        assertEquals(List.of(1), badges);
+
+        // Refusé → ligne lâchée, erreur remontée, aucun acquittement.
+        verify(pendingRepo).delete("incident", "inc-rejected");
+        verify(pendingRepo, never()).advanceBaseAndClear(
+                eq("incident"), eq("inc-rejected"), any(), any(), any());
+        assertEquals(1, reported.size());
+        assertTrue(reported.get(0).get(0).contains("inc-rejected"));
+
+        assertEquals(List.of(SyncStatus.SYNCING, SyncStatus.SUCCESS), statuses);
+    }
+
+    @Test
+    void push_eventMissingFromAck_leavesTheRowAloneWithoutCrashing() throws Exception {
+        PendingChange stranded = pending(7L, "inc-stranded", PendingChange.UPDATE, "mongo-7", "base");
+        when(pendingRepo.findBatch(anyInt())).thenReturn(List.of(stranded));
+
+        // Violation de l'invariant côté serveur : l'id soumis ne revient dans
+        // aucune des trois listes.
+        when(apiClient.ingest(any())).thenReturn(new IngestResult());
+        when(apiClient.changes(anyLong(), anyInt())).thenReturn(List.of());
+
+        onlineService().syncCycle();
+
+        // On ne devine pas : ni purge ni acquittement, et le cycle aboutit.
+        verify(pendingRepo, never()).delete(anyString(), anyString());
+        verify(pendingRepo, never()).advanceBaseAndClear(
+                anyString(), anyString(), any(), any(), any());
+        assertEquals(List.of(SyncStatus.SYNCING, SyncStatus.SUCCESS), statuses);
     }
 
     @Test
