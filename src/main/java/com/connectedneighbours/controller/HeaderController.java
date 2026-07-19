@@ -190,11 +190,11 @@ public class HeaderController {
         Alert confirm = new Alert(
                 Alert.AlertType.CONFIRMATION,
                 "Se déconnecter ?",
-                ButtonType.YES, ButtonType.NO
+                Buttons.YES, Buttons.NO
         );
         confirm.setTitle("Déconnexion");
         confirm.setHeaderText(null);
-        if (confirm.showAndWait().orElse(ButtonType.NO) != ButtonType.YES) return;
+        if (confirm.showAndWait().orElse(Buttons.NO) != Buttons.YES) return;
 
         appContext.logout();
         Stage stage = (Stage) btnLogout.getScene().getWindow();

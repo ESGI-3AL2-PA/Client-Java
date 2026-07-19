@@ -414,7 +414,7 @@ public class IncidentController extends BaseController {
         dialog.initModality(Modality.WINDOW_MODAL);
 
         ButtonType saveType = new ButtonType("Enregistrer", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
+        dialog.getDialogPane().getButtonTypes().addAll(saveType, Buttons.CANCEL);
 
         // Formulaire
         GridPane grid = new GridPane();
