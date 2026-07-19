@@ -8,7 +8,8 @@ public class ApiConfig {
     public static final String DEFAULT_HOST = BuildConfig.apiHost();
     /** -1 => URL sans suffixe ":port" (cas HTTPS derrière Caddy). */
     public static final int DEFAULT_PORT = BuildConfig.apiPort();
-    private static final Preferences PREFS = Preferences.userNodeForPackage(ApiConfig.class);
+    private static final Preferences PREFS =
+            Preferences.userNodeForPackage(ApiConfig.class).node(BuildConfig.profile());
     private static final String KEY_SCHEME = "api.scheme";
     private static final String KEY_HOST = "api.host";
     private static final String KEY_PORT = "api.port";

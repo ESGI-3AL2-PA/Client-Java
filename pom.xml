@@ -17,6 +17,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- Cibles par défaut : la stack locale. Le profil `prod` les remplace. -->
+        <!-- Isole les préférences machine (endpoints, curseur de sync, dernier user)
+             par build : un jar `prod` ne lit jamais les overrides d'un jar `local`. -->
+        <app.profile>local</app.profile>
         <app.api.scheme>http</app.api.scheme>
         <app.api.host>localhost</app.api.host>
         <app.api.port>3000</app.api.port>
@@ -29,6 +32,7 @@
         <profile>
             <id>prod</id>
             <properties>
+                <app.profile>prod</app.profile>
                 <app.api.scheme>https</app.api.scheme>
                 <app.api.host>api.connected-neighbours.fr</app.api.host>
                 <!-- Vide : pas de suffixe :port, Caddy termine le TLS sur 443. -->

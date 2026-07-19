@@ -68,6 +68,20 @@ public final class BuildConfig {
         }
     }
 
+    /**
+     * Identifiant du build ({@code local} par défaut, {@code prod} sous le profil Maven
+     * {@code prod}). Sert de sous-nœud {@code java.util.prefs} : les préférences machine
+     * d'un build ne débordent jamais sur un autre. Assaini pour être un nom de nœud valide.
+     */
+    public static String profile() {
+        String value = PROPS.getProperty("profile");
+        if (value == null || value.isBlank()) {
+            return "local";
+        }
+        String cleaned = value.trim().toLowerCase(java.util.Locale.ROOT).replaceAll("[^a-z0-9_-]", "");
+        return cleaned.isEmpty() ? "local" : cleaned;
+    }
+
     public static String apiScheme() {
         return scheme("api.scheme", "http");
     }

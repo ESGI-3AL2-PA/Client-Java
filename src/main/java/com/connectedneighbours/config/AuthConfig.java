@@ -26,7 +26,8 @@ public class AuthConfig {
      */
     public static final String SUPER_ADMIN_ROLE = "superAdmin";
     public static final Set<String> ADMIN_ROLES = Set.of("admin", SUPER_ADMIN_ROLE);
-    private static final Preferences PREFS = Preferences.userNodeForPackage(AuthConfig.class);
+    private static final Preferences PREFS =
+            Preferences.userNodeForPackage(AuthConfig.class).node(BuildConfig.profile());
     private static final String KEY_SCHEME = "auth.scheme";
     private static final String KEY_HOST = "auth.host";
     private static final String KEY_PORT = "auth.port";
