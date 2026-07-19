@@ -8,15 +8,19 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class UserRepository {
+
+    private static final Logger LOG = Logger.getLogger(UserRepository.class.getName());
 
     public List<User> findAll() {
         String sql = "SELECT * FROM users";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractUser);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -27,7 +31,7 @@ public class UserRepository {
             List<User> users = DatabaseUtil.executeQuery(sql, this::extractUser, id);
             return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -38,7 +42,7 @@ public class UserRepository {
             List<User> users = DatabaseUtil.executeQuery(sql, this::extractUser, email);
             return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -48,7 +52,7 @@ public class UserRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractUser, districtId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -71,7 +75,7 @@ public class UserRepository {
                     user.getUpdatedAt() != null ? Timestamp.valueOf(user.getUpdatedAt()) : null
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -92,7 +96,7 @@ public class UserRepository {
                     user.getId()
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -101,7 +105,7 @@ public class UserRepository {
         try {
             DatabaseUtil.executeUpdate(sql, id);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 

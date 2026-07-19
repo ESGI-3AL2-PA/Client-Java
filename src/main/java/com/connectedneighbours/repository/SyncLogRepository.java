@@ -8,15 +8,19 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class SyncLogRepository {
+
+    private static final Logger LOG = Logger.getLogger(SyncLogRepository.class.getName());
 
     public List<SyncLog> findAll() {
         String sql = "SELECT * FROM sync_log";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractSyncLog);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -27,7 +31,7 @@ public class SyncLogRepository {
             List<SyncLog> logs = DatabaseUtil.executeQuery(sql, this::extractSyncLog, id);
             return logs.isEmpty() ? Optional.empty() : Optional.of(logs.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -37,7 +41,7 @@ public class SyncLogRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractSyncLog, tableName);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -47,7 +51,7 @@ public class SyncLogRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractSyncLog, recordId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -57,7 +61,7 @@ public class SyncLogRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractSyncLog, action);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -67,7 +71,7 @@ public class SyncLogRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractSyncLog);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -77,7 +81,7 @@ public class SyncLogRepository {
         try {
             return DatabaseUtil.executeQuery(sql, this::extractSyncLog, tableName, recordId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -94,7 +98,7 @@ public class SyncLogRepository {
                     syncLog.getSyncedAt() != null ? Timestamp.valueOf(syncLog.getSyncedAt()) : null
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -110,7 +114,7 @@ public class SyncLogRepository {
                     syncLog.getId()
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -119,7 +123,7 @@ public class SyncLogRepository {
         try {
             DatabaseUtil.executeUpdate(sql, id);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -128,7 +132,7 @@ public class SyncLogRepository {
         try {
             DatabaseUtil.executeUpdate(sql, tableName, recordId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 

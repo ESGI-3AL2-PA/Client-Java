@@ -7,15 +7,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DistrictRepository {
+
+    private static final Logger LOG = Logger.getLogger(DistrictRepository.class.getName());
 
     public List<District> findAll() {
         String sql = "SELECT * FROM districts";
         try {
             return DatabaseUtil.executeQuery(sql, this::extractDistrict);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return List.of();
         }
     }
@@ -26,7 +30,7 @@ public class DistrictRepository {
             List<District> districts = DatabaseUtil.executeQuery(sql, this::extractDistrict, id);
             return districts.isEmpty() ? Optional.empty() : Optional.of(districts.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -39,7 +43,7 @@ public class DistrictRepository {
                     district.getName()
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -51,7 +55,7 @@ public class DistrictRepository {
                     district.getId()
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -60,7 +64,7 @@ public class DistrictRepository {
         try {
             DatabaseUtil.executeUpdate(sql, id);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
