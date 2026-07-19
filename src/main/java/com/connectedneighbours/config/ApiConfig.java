@@ -4,9 +4,10 @@ import java.util.prefs.Preferences;
 
 public class ApiConfig {
 
-    public static final String DEFAULT_SCHEME = "http";
-    public static final String DEFAULT_HOST = "localhost";
-    public static final int DEFAULT_PORT = 3000;
+    public static final String DEFAULT_SCHEME = BuildConfig.apiScheme();
+    public static final String DEFAULT_HOST = BuildConfig.apiHost();
+    /** -1 => URL sans suffixe ":port" (cas HTTPS derrière Caddy). */
+    public static final int DEFAULT_PORT = BuildConfig.apiPort();
     private static final Preferences PREFS = Preferences.userNodeForPackage(ApiConfig.class);
     private static final String KEY_SCHEME = "api.scheme";
     private static final String KEY_HOST = "api.host";
@@ -79,7 +80,7 @@ public class ApiConfig {
 
     public static void setPort(int port) {
         if (port <= 0 || port > 65535) {
-            PREFS.put(KEY_PORT, String.valueOf(DEFAULT_PORT));
+            PREFS.put(KEY_PORT, defaultPortText());
             return;
         }
         PREFS.put(KEY_PORT, String.valueOf(port));
@@ -106,7 +107,7 @@ public class ApiConfig {
             int port = Integer.parseInt(trimmed);
             setPort(port);
         } catch (NumberFormatException e) {
-            PREFS.put(KEY_PORT, String.valueOf(DEFAULT_PORT));
+            PREFS.put(KEY_PORT, defaultPortText());
         }
     }
 
@@ -120,9 +121,14 @@ public class ApiConfig {
     public static String getPortText() {
         String raw = PREFS.get(KEY_PORT, null);
         if (raw == null) {
-            return String.valueOf(DEFAULT_PORT);
+            return defaultPortText();
         }
         return raw.trim();
+    }
+
+    /** Le port par défaut tel qu'affiché/stocké : vide quand le build n'en impose pas. */
+    private static String defaultPortText() {
+        return DEFAULT_PORT > 0 ? String.valueOf(DEFAULT_PORT) : "";
     }
 
     /**

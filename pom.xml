@@ -15,7 +15,30 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!-- Cibles par défaut : la stack locale. Le profil `prod` les remplace. -->
+        <app.api.scheme>http</app.api.scheme>
+        <app.api.host>localhost</app.api.host>
+        <app.api.port>3000</app.api.port>
+        <app.auth.scheme>http</app.auth.scheme>
+        <app.auth.host>localhost</app.auth.host>
+        <app.auth.port>3001</app.auth.port>
     </properties>
+
+    <profiles>
+        <profile>
+            <id>prod</id>
+            <properties>
+                <app.api.scheme>https</app.api.scheme>
+                <app.api.host>api.connected-neighbours.fr</app.api.host>
+                <!-- Vide : pas de suffixe :port, Caddy termine le TLS sur 443. -->
+                <app.api.port/>
+                <app.auth.scheme>https</app.auth.scheme>
+                <app.auth.host>auth.connected-neighbours.fr</app.auth.host>
+                <app.auth.port/>
+            </properties>
+        </profile>
+    </profiles>
 
     <dependencies>
         <dependency>
@@ -102,6 +125,23 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>com/connectedneighbours/build.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>com/connectedneighbours/build.properties</include>
+                </includes>
+            </resource>
+        </resources>
+
         <plugins>
 
             <plugin>
