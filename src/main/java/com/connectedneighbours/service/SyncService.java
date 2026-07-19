@@ -104,7 +104,7 @@ public class SyncService {
                 new IncidentRepository(),
                 new UserRepository(),
                 new DistrictRepository(),
-                new StatisticsService(),
+                new StatisticsService(apiClient),
                 new SyncConfig(),
                 JacksonConfig.get(),
                 SyncService::defaultConnectivityCheck,

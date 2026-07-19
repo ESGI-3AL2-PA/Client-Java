@@ -14,23 +14,33 @@ import java.util.*;
 
 /**
  * Écran des statistiques, alimenté par la table {@code statistics} que
- * {@link com.connectedneighbours.service.StatisticsService} recalcule
- * localement depuis H2 à chaque cycle de synchronisation.
+ * {@link com.connectedneighbours.service.StatisticsService} recalcule à
+ * chaque cycle de synchronisation (incidents/utilisateurs depuis H2,
+ * annonces/événements/votes depuis l'api).
  *
  * <p>Ce sont des statistiques <em>de quartier</em> : la base locale ne reçoit
- * que le quartier de l'opérateur (§5.5 du design offline-sync). Les métriques
- * qui n'ont pas de source locale (annonces, événements, votes) ne sont plus
- * affichées — elles restaient vides depuis l'abandon de l'agrégation
- * serveur.</p>
+ * que le quartier de l'opérateur (§5.5 du design offline-sync).</p>
  */
 public class StatisticsController {
     private final StatisticRepository statisticRepo = new StatisticRepository();
     @FXML
     private Label statUsersTotal;
     @FXML
+    private Label statListingsTotal;
+    @FXML
+    private Label statEventsTotal;
+    @FXML
+    private Label statVotesTotal;
+    @FXML
     private Label statIncidentsTotal;
     @FXML
     private Label statUsersTrend;
+    @FXML
+    private Label statListingsTrend;
+    @FXML
+    private Label statEventsTrend;
+    @FXML
+    private Label statVotesTrend;
     @FXML
     private Label statIncidentsTrend;
     @FXML
@@ -44,6 +54,9 @@ public class StatisticsController {
         Map<String, List<Statistic>> history = historyByMetricKey(all);
 
         setTotal(statUsersTotal, statUsersTrend, history.get("users.total"));
+        setTotal(statListingsTotal, statListingsTrend, history.get("listings.total"));
+        setTotal(statEventsTotal, statEventsTrend, history.get("events.total"));
+        setTotal(statVotesTotal, statVotesTrend, history.get("votes.total"));
         setTotal(statIncidentsTotal, statIncidentsTrend, history.get("incidents.total"));
 
         populatePieChart(incidentsByStatusChart, history, "incidents.status.");

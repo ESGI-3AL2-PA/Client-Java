@@ -98,6 +98,15 @@ public class SyncApiClient {
         execute(request);
     }
 
+    /**
+     * GET générique, pour les endpoints de lecture (ex. totaux de ressources)
+     * qui n'ont pas de méthode dédiée ci-dessus.
+     */
+    public String get(String endpoint) throws IOException {
+        Request request = authenticated(new Request.Builder().url(url(endpoint))).get().build();
+        return execute(request);
+    }
+
     private Request.Builder authenticated(Request.Builder builder) {
         String token = tokenSupplier.get();
         if (token != null) {
