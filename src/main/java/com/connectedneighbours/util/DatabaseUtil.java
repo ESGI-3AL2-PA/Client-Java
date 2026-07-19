@@ -19,8 +19,8 @@ public class DatabaseUtil {
      * @throws SQLException Si une erreur survient
      */
     public static int executeUpdate(String sql, Object... params) throws SQLException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = DatabaseManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             setParameters(stmt, params);
             return stmt.executeUpdate();
         }
@@ -36,8 +36,8 @@ public class DatabaseUtil {
      * @throws SQLException Si une erreur survient
      */
     public static <T> List<T> executeQuery(String sql, RowMapper<T> rowMapper, Object... params) throws SQLException {
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+        Connection conn = DatabaseManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             setParameters(stmt, params);
             try (ResultSet rs = stmt.executeQuery()) {
                 List<T> results = new ArrayList<>();
@@ -63,8 +63,8 @@ public class DatabaseUtil {
         if (whereClause != null && !whereClause.trim().isEmpty()) {
             sql.append(" WHERE ").append(whereClause);
         }
-        try (Connection conn = DatabaseManager.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+        Connection conn = DatabaseManager.getConnection();
+        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
             setParameters(stmt, params);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
