@@ -26,6 +26,9 @@ import java.sql.SQLException;
 
 public class MainApp extends Application {
 
+    private static final double WINDOW_WIDTH = 1430;
+    private static final double WINDOW_HEIGHT = 830;
+
     private AppContext appContext;
     private SyncService syncService;
     private Stage primaryStage;
@@ -163,7 +166,7 @@ public class MainApp extends Application {
                 // le tout premier statut du cycle immédiat.
                 syncService.start();
 
-                Scene scene = new Scene(root, 1280, 800);
+                Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
                 ThemeManager.applyTheme(scene);
 
                 primaryStage.setTitle(I18nManager.tr("mainapp.window.title.dashboard"));
@@ -204,7 +207,7 @@ public class MainApp extends Application {
                 // on démarre maintenant pour ne pas perdre le premier statut.
                 syncService.start();
 
-                Scene scene = new Scene(root, 1280, 800);
+                Scene scene = new Scene(root, WINDOW_WIDTH, WINDOW_HEIGHT);
                 ThemeManager.applyTheme(scene);
 
                 primaryStage.setTitle(I18nManager.tr("mainapp.window.title.incidents"));
