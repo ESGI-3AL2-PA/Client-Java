@@ -68,6 +68,60 @@ public class DistrictRepository {
         }
     }
 
+    public Optional<District> findByMongoId(String mongoId) {
+        String sql = "SELECT * FROM districts WHERE mongo_id = ?";
+        try {
+            List<District> districts = DatabaseUtil.executeQuery(sql, this::extractDistrict, mongoId);
+            return districts.isEmpty() ? Optional.empty() : Optional.of(districts.get(0));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Les quartiers sont une entité <em>à sens unique</em> (§5.3) : gérés sur le
+     * web, ils ne font que descendre. Ils n'ont pas d'{@code updatedAt}, donc
+     * pas de jeton de concurrence optimiste — il n'y a rien à confronter
+     * puisque le client ne les modifie jamais.
+     *
+     * <p>La liste locale sert le menu déroulant du formulaire d'incident et la
+     * résolution id → nom, qui fonctionnent donc hors-ligne.</p>
+     */
+    public void saveFromSync(District district, String mongoId) {
+        String sql = "INSERT INTO districts (id, name, mongo_id) VALUES (?, ?, ?)";
+        try {
+            DatabaseUtil.executeUpdate(sql,
+                    district.getId(),
+                    district.getName(),
+                    mongoId
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateFromSync(District district, String mongoId) {
+        String sql = "UPDATE districts SET name = ? WHERE mongo_id = ?";
+        try {
+            DatabaseUtil.executeUpdate(sql,
+                    district.getName(),
+                    mongoId
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteFromSync(String mongoId) {
+        String sql = "DELETE FROM districts WHERE mongo_id = ?";
+        try {
+            DatabaseUtil.executeUpdate(sql, mongoId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private District extractDistrict(ResultSet rs) throws SQLException {
         District district = new District();
         district.setId(rs.getString("id"));

@@ -225,6 +225,36 @@ public class PendingChangesRepository {
         }
     }
 
+    /**
+     * L'état de synchronisation d'un enregistrement métier : son identifiant
+     * serveur et son jeton de concurrence optimiste. Les deux sont
+     * {@code null} tant que l'enregistrement n'a jamais été acquitté.
+     *
+     * <p>Vit ici plutôt que dans les modèles : c'est de la mécanique de sync,
+     * l'UI n'en a rien à faire.</p>
+     */
+    public RecordSyncState findRecordSyncState(String entity, String recordId) {
+        SyncEntity target = SyncEntity.fromWire(entity);
+        if (target == null) {
+            return new RecordSyncState(null, null);
+        }
+        String sql = "SELECT mongo_id, base_updated_at FROM " + target.getTable() + " WHERE id = ?";
+        try {
+            Connection conn = connections.get();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                stmt.setString(1, recordId);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return new RecordSyncState(rs.getString("mongo_id"), rs.getString("base_updated_at"));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            log("Impossible de lire l'état de sync de " + entity + "/" + recordId, e);
+        }
+        return new RecordSyncState(null, null);
+    }
+
     private Optional<PendingChange> findByKey(Connection conn, String entity, String recordId) throws SQLException {
         String sql = "SELECT * FROM pending_changes WHERE entity = ? AND record_id = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -264,5 +294,12 @@ public class PendingChangesRepository {
     @FunctionalInterface
     public interface ConnectionSupplier {
         Connection get() throws SQLException;
+    }
+
+    /**
+     * @param mongoId       identifiant serveur, {@code null} avant le premier ack
+     * @param baseUpdatedAt jeton de concurrence optimiste, {@code null} avant le premier ack
+     */
+    public record RecordSyncState(String mongoId, String baseUpdatedAt) {
     }
 }

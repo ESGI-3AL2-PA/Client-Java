@@ -109,6 +109,78 @@ public class UserRepository {
         }
     }
 
+    public Optional<User> findByMongoId(String mongoId) {
+        String sql = "SELECT * FROM users WHERE mongo_id = ?";
+        try {
+            List<User> users = DatabaseUtil.executeQuery(sql, this::extractUser, mongoId);
+            return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * Insère un utilisateur venu du flux serveur, sans inscrire d'écriture en
+     * attente : ce qui descend ne doit jamais remonter.
+     */
+    public void saveFromSync(User user, String mongoId, String baseUpdatedAt) {
+        String sql = "INSERT INTO users (id, email, firstName, lastName, phone, role, status, balance, address, districtId, created_at, updated_at, synced, mongo_id, base_updated_at) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, ?, ?)";
+        try {
+            DatabaseUtil.executeUpdate(sql,
+                    user.getId(),
+                    user.getEmail(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getPhone(),
+                    user.getRole(),
+                    user.getStatus(),
+                    user.getBalance(),
+                    user.getAddress(),
+                    user.getDistrictId(),
+                    user.getCreatedAt() != null ? Timestamp.valueOf(user.getCreatedAt()) : null,
+                    user.getUpdatedAt() != null ? Timestamp.valueOf(user.getUpdatedAt()) : null,
+                    mongoId,
+                    baseUpdatedAt
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateFromSync(User user, String mongoId, String baseUpdatedAt) {
+        String sql = "UPDATE users SET email = ?, firstName = ?, lastName = ?, phone = ?, role = ?, status = ?, balance = ?, address = ?, districtId = ?, created_at = ?, updated_at = ?, synced = TRUE, base_updated_at = ? WHERE mongo_id = ?";
+        try {
+            DatabaseUtil.executeUpdate(sql,
+                    user.getEmail(),
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getPhone(),
+                    user.getRole(),
+                    user.getStatus(),
+                    user.getBalance(),
+                    user.getAddress(),
+                    user.getDistrictId(),
+                    user.getCreatedAt() != null ? Timestamp.valueOf(user.getCreatedAt()) : null,
+                    user.getUpdatedAt() != null ? Timestamp.valueOf(user.getUpdatedAt()) : null,
+                    baseUpdatedAt,
+                    mongoId
+            );
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void deleteFromSync(String mongoId) {
+        String sql = "DELETE FROM users WHERE mongo_id = ?";
+        try {
+            DatabaseUtil.executeUpdate(sql, mongoId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private User extractUser(ResultSet rs) throws SQLException {
         User user = new User();
         user.setId(rs.getString("id"));
@@ -118,6 +190,7 @@ public class UserRepository {
         user.setPhone(rs.getString("phone"));
         user.setRole(rs.getString("role"));
         user.setStatus(rs.getString("status"));
+        user.setAddress(rs.getString("address"));
         user.setDistrictId(rs.getString("districtId"));
 
         double balance = rs.getDouble("balance");
