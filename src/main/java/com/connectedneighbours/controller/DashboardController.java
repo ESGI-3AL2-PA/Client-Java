@@ -3,6 +3,7 @@ package com.connectedneighbours.controller;
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
 import com.connectedneighbours.config.JacksonConfig;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.Alert;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.Statistic;
@@ -164,8 +165,10 @@ public class DashboardController extends BaseController {
             statUnsynced.setText(String.valueOf(unsynced));
 
             // Tendances (comparaison simple)
-            statOpenTrend.setText(open > 0 ? "Nécessite attention" : "Aucun incident");
-            statResolvedTrend.setText("Ces 30 derniers jours");
+            statOpenTrend.setText(open > 0
+                    ? I18nManager.tr("dashboard.trend.openNeedsAttention")
+                    : I18nManager.tr("dashboard.trend.noIncident"));
+            statResolvedTrend.setText(I18nManager.tr("dashboard.trend.resolved30d"));
 
             // Tableau : 10 incidents les plus récents
             incidentsTable.setItems(
@@ -181,7 +184,7 @@ public class DashboardController extends BaseController {
             loadAlerts();
 
         } catch (SQLException e) {
-            showError("Erreur chargement données : " + e.getMessage());
+            showError(I18nManager.tr("dashboard.loadError", e.getMessage()));
         }
     }
 
@@ -192,7 +195,7 @@ public class DashboardController extends BaseController {
         List<Alert> alerts = alertRepo.findRecent(5);
 
         if (alerts.isEmpty()) {
-            Label empty = new Label("Aucune alerte récente");
+            Label empty = new Label(I18nManager.tr("dashboard.alerts.empty"));
             empty.getStyleClass().add("text-faint");
             empty.setStyle("-fx-font-size: 12px;");
             alertsContainer.getChildren().add(empty);
@@ -223,16 +226,15 @@ public class DashboardController extends BaseController {
     private void onIncidentDoubleClick(Incident incident) {
         javafx.scene.control.Alert alert =
                 new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.INFORMATION);
-        alert.setTitle("Détail incident");
+        alert.setTitle(I18nManager.tr("dashboard.incidentDialog.title"));
         alert.setHeaderText(incident.getCategory());
-        alert.setContentText(
-                "Statut : " + incident.getStatus() + "\n" +
-                        "Priorité : " + "Normal" + "\n" +
-                        "Description : " + incident.getDescription() + "\n" +
-                        "Créé le : " + (incident.getCreatedAt() != null
-                        ? incident.getCreatedAt().format(DATE_FMT) : "—") + "\n" +
-                        "Synchronisé : " + (incident.isSynced() ? "Oui" : "Non")
-        );
+        alert.setContentText(I18nManager.tr("dashboard.incidentDialog.content",
+                incident.getStatus(),
+                I18nManager.tr("dashboard.incidentDialog.priorityDefault"),
+                incident.getDescription(),
+                incident.getCreatedAt() != null ? incident.getCreatedAt().format(DATE_FMT) : "—",
+                incident.isSynced() ? I18nManager.tr("common.value.yes") : I18nManager.tr("common.value.no")
+        ));
         alert.showAndWait();
     }
 
@@ -252,15 +254,15 @@ public class DashboardController extends BaseController {
         List<Statistic> stats = new StatisticRepository().findAll();
 
         if(stats.isEmpty()) {
-            showError("Aucune statistique à exporter pour le moment.");
+            showError(I18nManager.tr("dashboard.export.empty"));
             return;
         }
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export les statistiques");
+        fileChooser.setTitle(I18nManager.tr("dashboard.export.chooser.title"));
         fileChooser.setInitialFileName("Statistiques_" + LocalDate.now() + ".json");
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Fichier JSON", "*.json")
+                new FileChooser.ExtensionFilter(I18nManager.tr("dashboard.export.chooser.filter"), "*.json")
         );
 
         File file = fileChooser.showSaveDialog(syncNowButton.getScene().getWindow());
@@ -273,15 +275,15 @@ public class DashboardController extends BaseController {
 
             javafx.scene.control.Alert alert = new javafx.scene.control.Alert(
                     javafx.scene.control.Alert.AlertType.INFORMATION,
-                    "Statistiques exportées vers :\n" + file.getAbsolutePath(),
+                    I18nManager.tr("dashboard.export.success.message", file.getAbsolutePath()),
                     ButtonType.OK
             );
-            alert.setTitle("Export réussi");
+            alert.setTitle(I18nManager.tr("dashboard.export.success.title"));
             alert.setHeaderText(null);
             alert.showAndWait();
 
         } catch (IOException e) {
-            showError("Impossible d'écrire le fichier : " + e.getMessage());
+            showError(I18nManager.tr("dashboard.export.error", e.getMessage()));
         }
 
 
@@ -294,7 +296,7 @@ public class DashboardController extends BaseController {
                 .ifPresent(created -> loadData());
     }
 
-    //  Helpers couleurs alertes 
+    //  Helpers couleurs alertes
     private String alertColor(String type) {
         return switch (type != null ? type : "") {
             case "DANGER" -> "#e74c3c";

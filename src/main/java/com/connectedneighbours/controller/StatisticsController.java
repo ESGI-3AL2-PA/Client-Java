@@ -1,5 +1,6 @@
 package com.connectedneighbours.controller;
 
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.Statistic;
 import com.connectedneighbours.repository.StatisticRepository;
 import javafx.collections.FXCollections;
@@ -80,19 +81,18 @@ public class StatisticsController {
         valueLabel.setText(String.valueOf(latest.getMetricValue().intValue()));
 
         if (history.size() < 2) {
-            trendLabel.setText("Première mesure");
+            trendLabel.setText(I18nManager.tr("statistics.trend.firstMeasure"));
             return;
         }
 
         Statistic previous = history.get(history.size() - 2);
         int delta = latest.getMetricValue().intValue() - previous.getMetricValue().intValue();
 
-        if (delta > 0) {
-            trendLabel.setText("" + delta + " depuis la dernier sync");
-        } else if (delta < 0) {
-            trendLabel.setText(delta + " depuis la dernier sync");
+        if (delta != 0) {
+            String sign = delta > 0 ? "+" : "";
+            trendLabel.setText(I18nManager.tr("statistics.trend.delta", sign + delta));
         } else {
-            trendLabel.setText("Stable");
+            trendLabel.setText(I18nManager.tr("statistics.trend.stable"));
         }
 
 

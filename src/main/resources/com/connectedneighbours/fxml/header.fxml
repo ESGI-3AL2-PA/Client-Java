@@ -12,30 +12,30 @@
         <Insets top="14" right="20" bottom="14" left="20"/>
     </padding>
 
-    <Label text="Connected Neighbours" styleClass="header-title"/>
-    <Label text="Admin" styleClass="accent-badge"/>
+    <Label text="%common.brand.name" styleClass="header-title"/>
+    <Label text="%header.badge.admin" styleClass="accent-badge"/>
     <Label fx:id="currentUserLabel" text=""
            style="-fx-font-size: 12px;" styleClass="text-faint"/>
 
     <!-- Spacer -->
     <Region HBox.hgrow="ALWAYS"/>
 
-    <Button fx:id="btnDashboard" text="Dashboard"
+    <Button fx:id="btnDashboard" text="%common.page.dashboard"
             onAction="#onDashboardClick" styleClass="nav-button"/>
-    <Button fx:id="btnIncidents" text="Incidents"
+    <Button fx:id="btnIncidents" text="%common.page.incidents"
             onAction="#onIncidentsClick" styleClass="nav-button"/>
     <!-- Pas de onAction : désactivé par HeaderController#disableUsersButton. -->
-    <Button fx:id="btnUsers" text="Utilisateurs" styleClass="nav-button"/>
-    <Button fx:id="btnStatistics" text="Statistiques"
+    <Button fx:id="btnUsers" text="%common.page.users" styleClass="nav-button"/>
+    <Button fx:id="btnStatistics" text="%common.page.statistics"
             onAction="#onStatisticsClick" styleClass="nav-button"/>
-    <MenuButton fx:id="btnPlugins" text="Plugins" styleClass="nav-button">
+    <MenuButton fx:id="btnPlugins" text="%header.nav.plugins" styleClass="nav-button">
         <items>
-            <MenuItem text="Analyse sociale" onAction="#onSocialAnalysisClick"/>
-            <MenuItem text="Calendrier local" onAction="#onLocalCalendarClick"/>
+            <MenuItem text="%header.nav.plugins.social" onAction="#onSocialAnalysisClick"/>
+            <MenuItem text="%header.nav.plugins.calendar" onAction="#onLocalCalendarClick"/>
         </items>
     </MenuButton>
-    <Button fx:id="btnSettings" text="Paramètres"
+    <Button fx:id="btnSettings" text="%common.page.settings"
             onAction="#onSettingsClick" styleClass="nav-button"/>
-    <Button fx:id="btnLogout" text="Déconnexion"
+    <Button fx:id="btnLogout" text="%header.nav.logout"
             onAction="#onLogoutClick" styleClass="nav-button-logout"/>
 </HBox>

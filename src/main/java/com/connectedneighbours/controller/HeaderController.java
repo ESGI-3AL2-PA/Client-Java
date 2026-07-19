@@ -2,6 +2,7 @@ package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.plugin.PluginManager;
 import com.connectedneighbours.theme.ThemeManager;
@@ -132,10 +133,11 @@ public class HeaderController {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/connectedneighbours/fxml/statistics.fxml")
             );
+            loader.setResources(I18nManager.getBundle());
             Parent root = loader.load();
 
             Stage stage = new Stage();
-            stage.setTitle("Statistiques — Connected Neighbours");
+            stage.setTitle(I18nManager.tr("header.window.statistics.title"));
             stage.initOwner(btnStatistics.getScene().getWindow());
             stage.initModality(Modality.WINDOW_MODAL);
 
@@ -146,7 +148,7 @@ public class HeaderController {
             stage.setResizable(true);
             stage.showAndWait();
         } catch (Exception e) {
-            showError("Impossible d'ouvrir la page statistique : " + e.getMessage());
+            showError(I18nManager.tr("header.error.statistics", e.getMessage()));
         }
     }
 
@@ -156,10 +158,11 @@ public class HeaderController {
             FXMLLoader loader = new FXMLLoader(
                     getClass().getResource("/com/connectedneighbours/fxml/settings.fxml")
             );
+            loader.setResources(I18nManager.getBundle());
             Parent root = loader.load();
 
             Stage stage = new Stage();
-            stage.setTitle("Paramètres — Connected Neighbours");
+            stage.setTitle(I18nManager.tr("header.window.settings.title"));
             stage.initOwner(btnSettings.getScene().getWindow());
             stage.initModality(Modality.WINDOW_MODAL);
 
@@ -170,7 +173,7 @@ public class HeaderController {
             stage.setResizable(false);
             stage.showAndWait();
         } catch (Exception e) {
-            showError("Impossible d'ouvrir les paramètres : " + e.getMessage());
+            showError(I18nManager.tr("header.error.settings", e.getMessage()));
         }
     }
 
@@ -189,10 +192,10 @@ public class HeaderController {
         if (appContext == null) return;
         Alert confirm = new Alert(
                 Alert.AlertType.CONFIRMATION,
-                "Se déconnecter ?",
+                I18nManager.tr("header.logout.confirm.message"),
                 Buttons.YES, Buttons.NO
         );
-        confirm.setTitle("Déconnexion");
+        confirm.setTitle(I18nManager.tr("header.logout.confirm.title"));
         confirm.setHeaderText(null);
         if (confirm.showAndWait().orElse(Buttons.NO) != Buttons.YES) return;
 
@@ -219,7 +222,7 @@ public class HeaderController {
 
     private void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Erreur");
+        alert.setTitle(I18nManager.tr("common.error.title"));
         alert.setContentText(msg);
         alert.showAndWait();
     }

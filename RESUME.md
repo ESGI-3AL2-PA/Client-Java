@@ -2,9 +2,8 @@
 
 ## Contexte du projet
 
-Application desktop **JavaFX** faisant partie d'un projet plus large "Connected
-Neighbours" (app web/mobile de quartier avec API Node.js). Cette partie Java est l'**outil d'administration** utilisé
-par les modérateurs/admins.
+Application desktop **JavaFX** faisant partie d'un projet plus large "Connected Neighbours" (app web/mobile de quartier
+avec API Node.js). Cette partie Java est l' **outil d'administration** utilisé par les modérateurs/admins.
 
 - **Builder** : Maven
 - **JDK** : Java 21
@@ -12,7 +11,9 @@ par les modérateurs/admins.
 - **BDD locale** : H2 (embarqué, mode offline-first)
 - **HTTP client** : OkHttp (appels vers l'API Node.js)
 - **JSON** : Jackson (+ jackson-datatype-jsr310 pour les dates)
-- **Auth** : auth0 java-jwt + jwks-rsa (vérification JWT côté client, SSO via navigateur) — **démarrage offline-first** : le login SSO est skipé si un dernier user est mémorisé (`SessionConfig`) et que la base H2 locale contient des données
+- **Auth** : auth0 java-jwt + jwks-rsa (vérification JWT côté client, SSO via navigateur) — **démarrage
+  offline-first** : le login SSO est skipé si un dernier user est mémorisé (`SessionConfig`) et que la base H2 locale
+  contient des données
 - **Tests** : JUnit 5 + Mockito
 - **Packaging final** : fat `.jar` via Maven Shade Plugin
 
@@ -174,8 +175,8 @@ src/main/resources/
 
 ### 🌍 Internationalisation
 
-19. **i18n (FR/EN/ES)** — `ResourceBundle` + fichiers `messages_fr.properties`, `messages_en.properties`,
-    `messages_es.properties`. Combobox dans les paramètres pour changer de langue à chaud.
+19. **i18n (FR/EN/ES)** — `ResourceBundle` + fichiers `messages_fr.properties`, `messages_en.properties`. Combobox dans
+    les paramètres pour changer de langue à chaud.
 
 ### ✅ Qualité
 
@@ -217,12 +218,12 @@ src/main/resources/
 - ✅ **Tâche 11** — `PluginManager.java` (210 lignes) — chargement hybride built-in (`ServiceLoader`) + externe (JARs
   `./plugins/` via `URLClassLoader`), cycle de vie complet (init/execute/shutdown), erreurs isolées par plugin,
   rechargement à chaud des externes
-- ✅ **Tâche 13** — `SocialAnalysisPlugin.java` (414 lignes) — UI JavaFX (`TabPane` avec onglets
-  interactions/top contributeurs, `TableView`, `PieChart`) alimentée depuis l'API (`/api/social/...`) via
+- ✅ **Tâche 13** — `SocialAnalysisPlugin.java` (414 lignes) — UI JavaFX (`TabPane` avec onglets interactions/top
+  contributeurs, `TableView`, `PieChart`) alimentée depuis l'API (`/api/social/...`) via
   `ApiClient` + `JacksonConfig`. Enregistré dans `META-INF/services/com.connectedneighbours.plugin.Plugin`.
 - ✅ **Tâche 14** — `LocalCalendarPlugin.java` (212 lignes) — UI JavaFX (`TableView` des événements + `ComboBox`
-  de filtre), données récupérées en asynchrone (`CompletableFuture`) depuis l'API (`/api/events`). Enregistré dans
-  le fichier ServiceLoader.
+  de filtre), données récupérées en asynchrone (`CompletableFuture`) depuis l'API (`/api/events`). Enregistré dans le
+  fichier ServiceLoader.
 - ✅ **Tâche 15** — SSO complet : `SsoAuthService.java` (flow navigateur → callback loopback → JWT),
   `CallbackServer.java` (mini serveur HTTP sur port dynamique), `JwtVerifier.java` (vérification via JWKS RSA),
   `AuthConfig.java`, `TokenUnavailableException.java`
@@ -231,12 +232,19 @@ src/main/resources/
 - ✅ `BaseController.java` (193 lignes) — classe parente mutualisant la barre de sync, le header, le re-login auto
 - ✅ `Page.java` — enum DASHBOARD/INCIDENTS/USERS/STATISTICS/SETTINGS
 - ✅ `HeaderController.java` (215 lignes) — navigation toutes pages, ouverture modale statistiques/paramètres
+- ✅ **Tâche 19** — `I18nManager.java` + `Language.java` (pattern `Preferences` calqué sur
+  `ThemeManager`/`Theme`) + `messages_fr.properties`/`messages_en.properties` remplis FR/EN. Tous les FXML, contrôleurs et les 2
+  plugins JavaFX (`SocialAnalysisPlugin`, `LocalCalendarPlugin`) sont traduits. `ComboBox<Language>` dans
+  `settings.fxml` + `SettingsController.onApplyLanguageClick()` : changement de langue à chaud qui recharge
+  l'écran propriétaire (`MainApp.reloadCurrentScreen()`, nouveau champ `currentPage`) et reconstruit la
+  fenêtre Paramètres elle-même. Les ComboBox de statut (`IncidentController`, `LocalCalendarPlugin`) ont été
+  refactorées pour stocker des codes techniques stables plutôt que des libellés français en dur, avec une
+  cell factory traduisante. Tests : `LanguageTest`, `I18nManagerTest`.
 
 ### 🟡 Échafaudés (fichiers créés mais vides — structure prête, logique à écrire)
 
 - 🟡 **Tâche 12** — `ExportStatsPlugin.java` (vide — **seul plugin restant à implémenter**)
 - 🟡 **Tâche 17** — `UpdateService.java` (vide)
-- 🟡 **Tâche 19** — `I18nManager.java` + 3 fichiers properties (`messages_fr/en/es.properties`) — tous vides
 - 🟡 **Tâche 21** — `IncidentRepositoryTest.java` + `IncidentServiceTest.java` (vides) — **note** :
   `ApiClientTest.java` (39 lignes) et `SyncServiceTest.java` (161 lignes) sont eux implémentés
 
@@ -251,18 +259,18 @@ src/main/resources/
 
 - **`AppContext.java`** (64 lignes) — Contexte global partagé : instancie `SsoAuthService` + `ApiClient` (avec
   fournisseur de token), gère l'utilisateur courant et la déconnexion. Injecté dans les contrôleurs via `MainApp`.
-- **`BaseController.java`** (193 lignes) — Classe parente des contrôleurs : barre de sync mutualisée
-  (`updateSyncUI`, `onSyncNowClick`, `triggerRelogin`), header de navigation, hook `onSyncSuccess()` pour recharger
-  les données, helper `showError()`.
-- **`Page.java`** (13 lignes) — Enum `DASHBOARD` / `INCIDENTS` / `USERS` / `STATISTICS` / `SETTINGS` pour la
-  navigation et le style actif du header.
+- **`BaseController.java`** (193 lignes) — Classe parente des contrôleurs : barre de sync mutualisée (`updateSyncUI`,
+  `onSyncNowClick`, `triggerRelogin`), header de navigation, hook `onSyncSuccess()` pour recharger les données, helper
+  `showError()`.
+- **`Page.java`** (13 lignes) — Enum `DASHBOARD` / `INCIDENTS` / `USERS` / `STATISTICS` / `SETTINGS` pour la navigation
+  et le style actif du header.
 - **`HeaderController.java`** (215 lignes) — Navigation entre écrans, ouverture des fenêtres modales Statistiques et
   Paramètres avec `ThemeManager.applyTheme(scene)`.
 - **`IncidentController.java`** + `incidents.fxml` (609 + 96 lignes) — Écran complet : TableView 10 colonnes, filtres
   statut/catégorie, double-clic édition modale, création, historique des modifications.
 - **`StatisticsController.java`** + `statistics.fxml` (129 + 83 lignes) — Fenêtre modale : 5 cartes métriques
-  (utilisateurs, annonces, événements, votes, incidents) avec valeurs et tendances, 2 PieCharts (incidents par statut
-  et par catégorie).
+  (utilisateurs, annonces, événements, votes, incidents) avec valeurs et tendances, 2 PieCharts (incidents par statut et
+  par catégorie).
 - **`SettingsController.java`** + `settings.fxml` (393 + 125 lignes) — Écran de paramètres API : configuration
   scheme/hôte/port (persisté via `java.util.prefs`), aperçu URL de base, test de connexion par socket, support IPv6,
   sélection de thème.
@@ -279,13 +287,13 @@ src/main/resources/
 - **`PluginManager.java`** (210 lignes) — Chargement hybride built-in (`ServiceLoader`) + externe (JARs `./plugins/`).
   Cycle de vie complet (init/loadAll/executeAll/shutdownAll), rechargement à chaud des plugins externes.
 - **`HelloPlugin.java`** (41 lignes) — Plugin de validation du cycle de vie `ServiceLoader`.
-- **`SocialAnalysisPlugin.java`** (414 lignes) — UI JavaFX (`TabPane` + `TableView` + `PieChart`) consommant
-  l'API (`/api/social/...`) via `ApiClient` + `JacksonConfig`. Enregistré dans le fichier ServiceLoader.
-- **`LocalCalendarPlugin.java`** (212 lignes) — UI JavaFX (`TableView` + `ComboBox` de filtre) consommant
-  l'API (`/api/events`) en asynchrone (`CompletableFuture`). Enregistré dans le fichier ServiceLoader.
+- **`SocialAnalysisPlugin.java`** (414 lignes) — UI JavaFX (`TabPane` + `TableView` + `PieChart`) consommant l'API
+  (`/api/social/...`) via `ApiClient` + `JacksonConfig`. Enregistré dans le fichier ServiceLoader.
+- **`LocalCalendarPlugin.java`** (212 lignes) — UI JavaFX (`TableView` + `ComboBox` de filtre) consommant l'API
+  (`/api/events`) en asynchrone (`CompletableFuture`). Enregistré dans le fichier ServiceLoader.
 - **`statistics.fxml`** — Refactoré pour utiliser les `styleClass` du vocabulaire CSS (`.card`, `.card-label`,
-  `.card-value`, `.card-trend`, `.header`, `.header-title`, `.button-ghost`, `.scroll-transparent`, `.app-bg`),
-  cohérent avec les autres FXML.
+  `.card-value`, `.card-trend`, `.header`, `.header-title`, `.button-ghost`, `.scroll-transparent`, `.app-bg`), cohérent
+  avec les autres FXML.
 - **`DatabaseUtil.java`** (90 lignes) — Utilitaires pour les opérations BDD (executeQuery, executeUpdate, countRows).
 - **`ViewLoader.java`** — Utilitaire de chargement FXML (échafaudé, vide).
 - **`logback.xml`** — Fichier de config logging (échafaudé, vide ; les dépendances SLF4J/Logback ont été retirées du
@@ -299,12 +307,12 @@ navigateur) est désormais **skipé** quand c'est possible, pour atterrir direct
 - **`SessionConfig.java`** (~85 lignes) — Persistance du dernier utilisateur connecté via
   `java.util.prefs.Preferences` (pattern identique à `ApiConfig`/`AuthConfig`). Le `User` est sérialisé en JSON via
   `JacksonConfig` (le module jsr310 gère `LocalDateTime`). Clés : `session.lastUser` (JSON) et `session.lastLoginAt`
-  (ISO-8601). Méthodes : `saveLastUser(User)`, `loadLastUser() → Optional<User>`, `clearLastUser()`.
-  **Aucun access token n'est persisté** (conformément au commentaire de `SsoAuthService` : le refresh token reste dans
-  le navigateur via cookie HttpOnly).
+  (ISO-8601). Méthodes : `saveLastUser(User)`, `loadLastUser() → Optional<User>`, `clearLastUser()`. **Aucun access
+  token n'est persisté** (conformément au commentaire de `SsoAuthService` : le refresh token reste dans le navigateur
+  via cookie HttpOnly).
 - **`MainApp.start()`** — Avant le flow SSO navigateur, tente `SessionConfig.loadLastUser()` + vérifie qu'au moins une
-  table H2 (`INCIDENTS`, `ALERTS`, `USERS`, `STATISTICS`, `SYNC_LOG`) contient ≥ 1 ligne (helper `hasLocalData()`,
-  via `DatabaseUtil.countRows`). Si les deux conditions sont remplies → `appContext.setCurrentUser(restoredUser);
+  table H2 (`INCIDENTS`, `ALERTS`, `USERS`, `STATISTICS`, `SYNC_LOG`) contient ≥ 1 ligne (helper `hasLocalData()`, via
+  `DatabaseUtil.countRows`). Si les deux conditions sont remplies → `appContext.setCurrentUser(restoredUser);
   showDashboard(); return;` (skip du SSO). Sinon, flow navigateur inchangé. Après chaque login réussi (`start` et
   `backToLogin`), `SessionConfig.saveLastUser(user)` est appelé.
 - **`AppContext.logout()`** — Appelle `SessionConfig.clearLastUser()` avant de vider l'état en mémoire : le bouton
@@ -318,11 +326,12 @@ navigateur) est désormais **skipé** quand c'est possible, pour atterrir direct
   Guard `reloginRequested` anti-boucle partagé entre tous les contrôleurs.
 
 **Comportement final au lancement (GUI) :**
+
 1. **1er lancement** (pas de user mémorisé OU H2 vide) → login SSO navigateur comme avant, puis mémorisation du user.
 2. **Lancements suivants** (user mémorisé + données locales) → dashboard direct, hors-ligne, sans ouvrir le navigateur.
 3. **Bouton "Déconnexion"** → efface le user mémorisé → prochain démarrage exigera un re-login.
-4. **Sync tournée en ligne sans token** (session restaurée) → `AUTH_REQUIRED` → re-login navigateur automatique
-   (refresh silencieux via cookie navigateur si ≤ 7j).
+4. **Sync tournée en ligne sans token** (session restaurée) → `AUTH_REQUIRED` → re-login navigateur automatique (refresh
+   silencieux via cookie navigateur si ≤ 7j).
 
 ---
 
@@ -334,42 +343,43 @@ navigateur) est désormais **skipé** quand c'est possible, pour atterrir direct
 ### Coordonnées du projet
 
 ```xml
+
 <groupId>com.connectedneighbours</groupId>
 <artifactId>admin-desktop</artifactId>
 <version>1.0.0</version>
 <packaging>jar</packaging>
-<!-- maven.compiler.source / target = 21, encodage UTF-8 -->
+        <!-- maven.compiler.source / target = 21, encodage UTF-8 -->
 ```
 
 ### Dépendances (scope `compile` sauf indication)
 
-| Groupe | ArtifactId | Version | Rôle |
-|---|---|---|---|
-| `org.openjfx` | `javafx-controls` | 21.0.11-ea+4 | UI toolkit (boutons, tables, layout…) |
-| `org.openjfx` | `javafx-fxml` | 21.0.11-ea+4 | Chargement des vues FXML |
-| `org.openjfx` | `javafx-web` | 21.0.11-ea+4 | Disponible (non utilisé dans le flow SSO actuel — le navigateur OS est utilisé) |
-| `org.openjfx` | `javafx-swing` | 21.0.11-ea+4 | Disponible (interop Swing, non utilisé) |
-| `com.h2database` | `h2` | 2.4.240 | BDD embarquée offline-first (`jdbc:h2:./data/admin_db`) |
-| `com.squareup.okhttp3` | `okhttp` | 4.12.0 | Client HTTP (appels vers l'API Node.js, SSO userinfo) |
-| `com.auth0` | `java-jwt` | 4.5.2 | Décodage/vérification JWT |
-| `com.auth0` | `jwks-rsa` | 0.22.1 | Fetch des clés JWKS RSA pour vérifier la signature JWT |
-| `com.fasterxml.jackson.core` | `jackson-databind` | 2.22.0 | (Dé)sérialisation JSON (HTTP + persistance du dernier user dans `SessionConfig`) |
-| `com.fasterxml.jackson.datatype` | `jackson-datatype-jsr310` | 2.22.0 | Module Jackson pour `java.time` (`LocalDateTime` sur `User`, `Incident`…) |
-| `org.junit.jupiter` | `junit-jupiter-api` | 5.14.4 | API de tests (scope `test`) |
-| `org.junit.jupiter` | `junit-jupiter-engine` | 5.14.4 | Runner JUnit 5 (scope `test`) |
-| `org.mockito` | `mockito-core` | 5.23.0 | Mocks pour tests (`SyncServiceTest`, `ApiClientTest`) (scope `test`) |
+| Groupe                           | ArtifactId                | Version      | Rôle                                                                             |
+|----------------------------------|---------------------------|--------------|----------------------------------------------------------------------------------|
+| `org.openjfx`                    | `javafx-controls`         | 21.0.11-ea+4 | UI toolkit (boutons, tables, layout…)                                            |
+| `org.openjfx`                    | `javafx-fxml`             | 21.0.11-ea+4 | Chargement des vues FXML                                                         |
+| `org.openjfx`                    | `javafx-web`              | 21.0.11-ea+4 | Disponible (non utilisé dans le flow SSO actuel — le navigateur OS est utilisé)  |
+| `org.openjfx`                    | `javafx-swing`            | 21.0.11-ea+4 | Disponible (interop Swing, non utilisé)                                          |
+| `com.h2database`                 | `h2`                      | 2.4.240      | BDD embarquée offline-first (`jdbc:h2:./data/admin_db`)                          |
+| `com.squareup.okhttp3`           | `okhttp`                  | 4.12.0       | Client HTTP (appels vers l'API Node.js, SSO userinfo)                            |
+| `com.auth0`                      | `java-jwt`                | 4.5.2        | Décodage/vérification JWT                                                        |
+| `com.auth0`                      | `jwks-rsa`                | 0.22.1       | Fetch des clés JWKS RSA pour vérifier la signature JWT                           |
+| `com.fasterxml.jackson.core`     | `jackson-databind`        | 2.22.0       | (Dé)sérialisation JSON (HTTP + persistance du dernier user dans `SessionConfig`) |
+| `com.fasterxml.jackson.datatype` | `jackson-datatype-jsr310` | 2.22.0       | Module Jackson pour `java.time` (`LocalDateTime` sur `User`, `Incident`…)        |
+| `org.junit.jupiter`              | `junit-jupiter-api`       | 5.14.4       | API de tests (scope `test`)                                                      |
+| `org.junit.jupiter`              | `junit-jupiter-engine`    | 5.14.4       | Runner JUnit 5 (scope `test`)                                                    |
+| `org.mockito`                    | `mockito-core`            | 5.23.0       | Mocks pour tests (`SyncServiceTest`, `ApiClientTest`) (scope `test`)             |
 
 > **Logs** : SLF4J/Logback ont été **retirés** du `pom.xml`. Le code utilise `java.util.logging` ou
 > `e.printStackTrace()` directement. Le fichier `src/main/resources/logback.xml` existe mais est vide (scaffolding).
 
 ### Plugins Maven (`<build><plugins>`)
 
-| GroupId | ArtifactId | Version | Rôle |
-|---|---|---|---|
-| `org.openjfx` | `javafx-maven-plugin` | 0.0.8 | `mvn javafx:run` — mainClass : `com.connectedneighbours.MainApp` |
-| `org.apache.maven.plugins` | `maven-shade-plugin` | 3.6.2 | Fat JAR (tâche 22) — mainClass (Manifest) : `com.connectedneighbours.Launcher` ; filtre `META-INF/*.SF|DSA|RSA` |
-| `org.apache.maven.plugins` | `maven-surefire-plugin` | 3.5.6 | Runner de tests (`mvn test`) |
-| `org.apache.maven.plugins` | `maven-compiler-plugin` | 3.15.0 | Compilation Java 21 (`<source>21</source><target>21</target>`) |
+| GroupId                    | ArtifactId              | Version | Rôle                                                                                                   |
+|----------------------------|-------------------------|---------|--------------------------------------------------------------------------------------------------------|
+| `org.openjfx`              | `javafx-maven-plugin`   | 0.0.8   | `mvn javafx:run` — mainClass : `com.connectedneighbours.MainApp`                                       |
+| `org.apache.maven.plugins` | `maven-shade-plugin`    | 3.6.2   | Fat JAR (tâche 22) — mainClass (Manifest) : `com.connectedneighbours.Launcher` ; filtre `META-INF/*.SF |DSA|RSA` |
+| `org.apache.maven.plugins` | `maven-surefire-plugin` | 3.5.6   | Runner de tests (`mvn test`)                                                                           |
+| `org.apache.maven.plugins` | `maven-compiler-plugin` | 3.15.0  | Compilation Java 21 (`<source>21</source><target>21</target>`)                                         |
 
 ### Commandes Maven utiles
 
