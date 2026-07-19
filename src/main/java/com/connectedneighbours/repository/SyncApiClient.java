@@ -57,7 +57,7 @@ public class SyncApiClient {
      */
     public IngestResult ingest(List<IngestEvent> events) throws IOException {
         String body = mapper.writeValueAsString(events);
-        Request request = authenticated(new Request.Builder().url(url("/ingest")))
+        Request request = authenticated(new Request.Builder().url(url("/sync/ingest")))
                 .post(RequestBody.create(body, JSON))
                 .build();
         return mapper.readValue(execute(request), IngestResult.class);
@@ -71,7 +71,7 @@ public class SyncApiClient {
      */
     public List<ChangeEntry> changes(long since, int limit) throws IOException {
         Request request = authenticated(
-                new Request.Builder().url(url("/changes?since=" + since + "&limit=" + limit)))
+                new Request.Builder().url(url("/sync/changes?since=" + since + "&limit=" + limit)))
                 .get()
                 .build();
         return readList(execute(request), ChangeEntry[].class);
@@ -83,7 +83,7 @@ public class SyncApiClient {
      */
     public List<Conflict> myConflicts(int limit) throws IOException {
         Request request = authenticated(
-                new Request.Builder().url(url("/conflicts?mine=true&status=pending&limit=" + limit)))
+                new Request.Builder().url(url("/sync/conflicts?mine=true&status=pending&limit=" + limit)))
                 .get()
                 .build();
         return readList(execute(request), Conflict[].class);
@@ -92,7 +92,7 @@ public class SyncApiClient {
     public void resolveConflict(String conflictId, ResolveConflictRequest resolution) throws IOException {
         String body = mapper.writeValueAsString(resolution);
         Request request = authenticated(
-                new Request.Builder().url(url("/conflicts/" + conflictId + "/resolve")))
+                new Request.Builder().url(url("/sync/conflicts/" + conflictId + "/resolve")))
                 .post(RequestBody.create(body, JSON))
                 .build();
         execute(request);
