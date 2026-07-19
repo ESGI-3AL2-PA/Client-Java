@@ -1,12 +1,18 @@
 package com.connectedneighbours.controller;
 
+import com.connectedneighbours.MainApp;
 import com.connectedneighbours.config.ApiConfig;
+import com.connectedneighbours.i18n.I18nManager;
+import com.connectedneighbours.i18n.Language;
 import com.connectedneighbours.theme.Theme;
 import com.connectedneighbours.theme.ThemeManager;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ChoiceBox;
@@ -17,7 +23,9 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.TextFormatter;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -42,6 +50,10 @@ public class SettingsController {
 	private ComboBox<Theme> themeCombo;
 	@FXML
 	private Label themeHintLabel;
+	@FXML
+	private ComboBox<Language> languageCombo;
+	@FXML
+	private Label languageHintLabel;
 
 	private volatile Task<Boolean> connectionTestTask;
 
@@ -77,6 +89,7 @@ public class SettingsController {
 
 		refreshBaseUrlPreview();
 		initThemeCombo();
+		initLanguageCombo();
 	}
 
 	private void initThemeCombo() {
@@ -86,6 +99,15 @@ public class SettingsController {
 		themeCombo.setValue(ThemeManager.getCurrent());
 		// Pas d'application automatique sur sélection : l'utilisateur doit
 		// cliquer sur « Recharger » pour persiste + appliquer le thème.
+	}
+
+	private void initLanguageCombo() {
+		languageCombo.setCellFactory(lv -> cell(Language::getDisplayName));
+		languageCombo.setButtonCell(cell(Language::getDisplayName));
+		languageCombo.setItems(FXCollections.observableArrayList(I18nManager.getAvailableLanguages()));
+		languageCombo.setValue(I18nManager.getCurrent());
+		// Pas d'application automatique sur sélection : l'utilisateur doit
+		// cliquer sur « Appliquer » pour persister + recharger les écrans.
 	}
 
 	private static <T> ListCell<T> cell(java.util.function.Function<T, String> text) {
@@ -131,6 +153,55 @@ public class SettingsController {
 		}
 	}
 
+	/**
+	 * Change de langue "à chaud" : persiste le choix, recharge l'écran
+	 * propriétaire (dashboard/incidents, via {@link MainApp#reloadCurrentScreen()})
+	 * puis reconstruit cette fenêtre Paramètres elle-même sur son {@link Stage}
+	 * existant (position/modalité/owner préservés).
+	 */
+	@FXML
+	public void onApplyLanguageClick() {
+		Language selected = languageCombo.getValue();
+		if (selected == null || hostField.getScene() == null) return;
+
+		// Capturés avant toute mutation : les champs @FXML de cette instance
+		// ne doivent plus être ré-interrogés après le remplacement de la scène.
+		Stage stage = (Stage) hostField.getScene().getWindow();
+		Window owner = stage.getOwner();
+
+		I18nManager.setCurrent(selected);
+
+		reloadOwnerScreen(owner);
+		reloadSettingsWindow(stage);
+	}
+
+	private void reloadOwnerScreen(Window owner) {
+		if (owner instanceof Stage ownerStage && ownerStage.getUserData() instanceof MainApp app) {
+			app.reloadCurrentScreen();
+		}
+	}
+
+	private void reloadSettingsWindow(Stage stage) {
+		try {
+			FXMLLoader loader = new FXMLLoader(
+					getClass().getResource("/com/connectedneighbours/fxml/settings.fxml")
+			);
+			loader.setResources(I18nManager.getBundle());
+			Parent root = loader.load();
+
+			double width = stage.getScene() != null ? stage.getScene().getWidth() : 720;
+			double height = stage.getScene() != null ? stage.getScene().getHeight() : 520;
+			Scene newScene = new Scene(root, width, height);
+			ThemeManager.applyTheme(newScene);
+			stage.setScene(newScene);
+		} catch (IOException e) {
+			Alert alert = new Alert(Alert.AlertType.ERROR);
+			alert.setTitle(I18nManager.tr("common.error.title"));
+			alert.setContentText(I18nManager.tr("settings.reload.error", e.getMessage()));
+			alert.showAndWait();
+		}
+	}
+
 	@FXML
 	public void onSaveClick() {
 		ApiSettings settings;
@@ -145,9 +216,10 @@ public class SettingsController {
 		ApiConfig.setHost(settings.host());
 		ApiConfig.setPort(settings.portText());
 
-		Alert alert = new Alert(Alert.AlertType.INFORMATION, "Paramètres enregistrés.\n\nURL de base : " + settings.baseUrl(), ButtonType.OK);
-		alert.setTitle("Paramètres");
-		alert.setHeaderText("Configuration API mise à jour");
+		Alert alert = new Alert(Alert.AlertType.INFORMATION,
+				I18nManager.tr("settings.save.success.message", settings.baseUrl()), ButtonType.OK);
+		alert.setTitle(I18nManager.tr("settings.save.success.title"));
+		alert.setHeaderText(I18nManager.tr("settings.save.success.header"));
 		alert.showAndWait();
 
 		closeWindow();
@@ -185,7 +257,7 @@ public class SettingsController {
 		}
 
 		int connectivityPort = settings.portForConnectivity();
-		setTestResult("Test de connexion en cours... (port " + connectivityPort + ")", Color.GRAY);
+		setTestResult(I18nManager.tr("settings.test.inProgress", connectivityPort), Color.GRAY);
 
 		Task<Boolean> task = new Task<>() {
 			@Override
@@ -198,12 +270,12 @@ public class SettingsController {
 		task.setOnSucceeded(evt -> {
 			Boolean ok = task.getValue();
 			if (Boolean.TRUE.equals(ok)) {
-				setTestResult("Connexion OK", Color.web("#27ae60"));
+				setTestResult(I18nManager.tr("settings.test.ok"), Color.web("#27ae60"));
 			} else {
-				setTestResult("Impossible de se connecter", Color.web("#e74c3c"));
+				setTestResult(I18nManager.tr("settings.test.fail"), Color.web("#e74c3c"));
 			}
 		});
-		task.setOnFailed(evt -> setTestResult("Erreur pendant le test", Color.web("#e74c3c")));
+		task.setOnFailed(evt -> setTestResult(I18nManager.tr("settings.test.error"), Color.web("#e74c3c")));
 
 		Thread t = new Thread(task, "api-connection-test");
 		t.setDaemon(true);
@@ -239,7 +311,7 @@ public class SettingsController {
 		String portInput = portField.getText() != null ? portField.getText().trim() : "";
 
 		if (hostInput.isBlank()) {
-			throw new IllegalArgumentException("L'hôte de l'API est obligatoire.");
+			throw new IllegalArgumentException(I18nManager.tr("settings.host.required"));
 		}
 
 		// Permet de coller directement une URL (ex: https://api.example.com:3000)
@@ -277,7 +349,7 @@ public class SettingsController {
 			hostField.setText(hostInput);
 		}
 		if (hostInput.contains(" ")) {
-			throw new IllegalArgumentException("L'hôte ne doit pas contenir d'espaces.");
+			throw new IllegalArgumentException(I18nManager.tr("settings.host.noSpaces"));
 		}
 
 		// Port optionnel.
@@ -286,10 +358,10 @@ public class SettingsController {
 			try {
 				port = Integer.parseInt(portInput);
 			} catch (NumberFormatException e) {
-				throw new IllegalArgumentException("Le port doit être un nombre (1-65535) ou vide.", e);
+				throw new IllegalArgumentException(I18nManager.tr("settings.port.invalid"), e);
 			}
 			if (port <= 0 || port > 65535) {
-				throw new IllegalArgumentException("Le port doit être compris entre 1 et 65535 (ou vide). ");
+				throw new IllegalArgumentException(I18nManager.tr("settings.port.range"));
 			}
 		}
 
@@ -362,8 +434,8 @@ public class SettingsController {
 
 	private void showError(String msg) {
 		Alert alert = new Alert(Alert.AlertType.ERROR);
-		alert.setTitle("Erreur");
-		alert.setHeaderText("Paramètres invalides");
+		alert.setTitle(I18nManager.tr("common.error.title"));
+		alert.setHeaderText(I18nManager.tr("settings.invalid.title"));
 		alert.setContentText(msg);
 		alert.showAndWait();
 	}

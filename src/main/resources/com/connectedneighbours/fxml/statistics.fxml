@@ -15,11 +15,11 @@
         <HBox alignment="CENTER_LEFT" spacing="12" styleClass="header">
             <padding><Insets top="14" right="20" bottom="14" left="20"/></padding>
 
-            <Label text="Statistiques" styleClass="header-title"/>
+            <Label text="%common.page.statistics" styleClass="header-title"/>
 
             <Region HBox.hgrow="ALWAYS"/>
 
-            <Button text="Fermer" onAction="#onCloseClick" styleClass="button-ghost"/>
+            <Button text="%common.action.close" onAction="#onCloseClick" styleClass="button-ghost"/>
         </HBox>
     </top>
 
@@ -33,35 +33,35 @@
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <Label text="Utilisateurs" styleClass="card-label"/>
+                        <Label text="%common.page.users" styleClass="card-label"/>
                         <Label fx:id="statUsersTotal" text="—" styleClass="card-value"/>
                         <Label fx:id="statUsersTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <Label text="Annonces" styleClass="card-label"/>
+                        <Label text="%statistics.card.listings" styleClass="card-label"/>
                         <Label fx:id="statListingsTotal" text="—" styleClass="card-value"/>
                         <Label fx:id="statListingsTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <Label text="Événements" styleClass="card-label"/>
+                        <Label text="%statistics.card.events" styleClass="card-label"/>
                         <Label fx:id="statEventsTotal" text="—" styleClass="card-value"/>
                         <Label fx:id="statEventsTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <Label text="Votes" styleClass="card-label"/>
+                        <Label text="%statistics.card.votes" styleClass="card-label"/>
                         <Label fx:id="statVotesTotal" text="—" styleClass="card-value"/>
                         <Label fx:id="statVotesTrend" text="" styleClass="card-trend"/>
                     </VBox>
 
                     <VBox HBox.hgrow="ALWAYS" spacing="6" styleClass="card">
                         <padding><Insets top="16" right="16" bottom="16" left="16"/></padding>
-                        <Label text="Incidents" styleClass="card-label"/>
+                        <Label text="%common.page.incidents" styleClass="card-label"/>
                         <Label fx:id="statIncidentsTotal" text="—" styleClass="card-value"/>
                         <Label fx:id="statIncidentsTrend" text="" styleClass="card-trend"/>
                     </VBox>
@@ -71,9 +71,9 @@
                 <!-- Rangée 2 : les 2 graphiques -->
                 <HBox spacing="16">
                     <PieChart fx:id="incidentsByStatusChart" HBox.hgrow="ALWAYS"
-                              title="Incidents par statut" prefHeight="280" legendVisible="true"/>
+                              title="%statistics.chart.byStatus.title" prefHeight="280" legendVisible="true"/>
                     <PieChart fx:id="incidentsByCategoryChart" HBox.hgrow="ALWAYS"
-                              title="Incidents par catégorie" prefHeight="280" legendVisible="true"/>
+                              title="%statistics.chart.byCategory.title" prefHeight="280" legendVisible="true"/>
                 </HBox>
 
             </VBox>

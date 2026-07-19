@@ -2,6 +2,7 @@ package com.connectedneighbours.plugin.plugins;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.config.JacksonConfig;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.plugin.Plugin;
 import com.connectedneighbours.theme.ThemeManager;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,6 +22,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -48,7 +50,7 @@ public class SocialAnalysisPlugin implements Plugin {
         }
         Platform.runLater(() -> {
             Stage stage = new Stage();
-            stage.setTitle("Analyse sociale — Connected Neighbours");
+            stage.setTitle(I18nManager.tr("plugin.social.window.title"));
             stage.setMinWidth(960);
             stage.setMinHeight(680);
 
@@ -70,7 +72,7 @@ public class SocialAnalysisPlugin implements Plugin {
     }
 
     private VBox loadingBox() {
-        Label lbl = new Label("Chargement...");
+        Label lbl = new Label(I18nManager.tr("common.sync.loading"));
         lbl.setStyle("-fx-font-size: 14px; -fx-padding: 20;");
         return new VBox(lbl);
     }
@@ -124,8 +126,18 @@ public class SocialAnalysisPlugin implements Plugin {
         return lbl;
     }
 
+    private static void stretchColumns(TableView<?> table) {
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+    }
+
+    private static void sizeToRowCount(TableView<?> table, int rowCount, double maxHeight) {
+        double height = 30 + Math.max(rowCount, 1) * 28 + 4;
+        table.setPrefHeight(Math.min(height, maxHeight));
+        table.setMinHeight(Region.USE_PREF_SIZE);
+    }
+
     private Tab buildUsersTab(AppContext ctx) {
-        Tab tab = new Tab("Utilisateurs");
+        Tab tab = new Tab(I18nManager.tr("common.page.users"));
         tab.setClosable(false);
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(16));
@@ -137,7 +149,7 @@ public class SocialAnalysisPlugin implements Plugin {
             if (now && root.getCenter() == placeholder) {
                 fetchAsync(ctx, "/users?limit=100", json -> Platform.runLater(() -> {
                     if (json == null || !json.has("data")) {
-                        root.setCenter(errorBox("Impossible de charger les utilisateurs."));
+                        root.setCenter(errorBox(I18nManager.tr("plugin.social.error.users")));
                         return;
                     }
                     JsonNode data = json.get("data");
@@ -147,9 +159,9 @@ public class SocialAnalysisPlugin implements Plugin {
                     content.setPadding(new Insets(4, 0, 0, 0));
 
                     content.getChildren().add(sectionTitle(
-                            String.format("Total utilisateurs : %d  |  Affichés : %d", total, data.size())));
+                            I18nManager.tr("plugin.social.section.usersTotal", total, data.size())));
 
-                    PieChart roleChart = buildPieChart(countByKey(data, "role"), "Répartition par rôle");
+                    PieChart roleChart = buildPieChart(countByKey(data, "role"), I18nManager.tr("plugin.social.chart.byRole"));
                     if (!roleChart.getData().isEmpty()) {
                         roleChart.setLabelsVisible(true);
                         content.getChildren().add(roleChart);
@@ -157,13 +169,14 @@ public class SocialAnalysisPlugin implements Plugin {
 
                     TableView<JsonNode> table = new TableView<>();
                     table.setPrefHeight(320);
+                    stretchColumns(table);
                     table.getColumns().addAll(
-                            jsonCol("Email", "email"),
-                            jsonCol("Prénom", "firstName"),
-                            jsonCol("Nom", "lastName"),
-                            jsonCol("Rôle", "role"),
-                            jsonCol("Solde", "balance"),
-                            jsonCol("District", "districtId")
+                            jsonCol(I18nManager.tr("plugin.social.col.email"), "email"),
+                            jsonCol(I18nManager.tr("plugin.social.col.firstName"), "firstName"),
+                            jsonCol(I18nManager.tr("plugin.social.col.lastName"), "lastName"),
+                            jsonCol(I18nManager.tr("plugin.social.col.role"), "role"),
+                            jsonCol(I18nManager.tr("plugin.social.col.balance"), "balance"),
+                            jsonCol(I18nManager.tr("common.field.district"), "districtId")
                     );
                     ObservableList<JsonNode> items = FXCollections.observableArrayList();
                     for (JsonNode node : data) items.add(node);
@@ -179,7 +192,7 @@ public class SocialAnalysisPlugin implements Plugin {
     }
 
     private Tab buildIncidentsTab(AppContext ctx) {
-        Tab tab = new Tab("Incidents");
+        Tab tab = new Tab(I18nManager.tr("common.page.incidents"));
         tab.setClosable(false);
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(16));
@@ -191,33 +204,33 @@ public class SocialAnalysisPlugin implements Plugin {
             if (now && root.getCenter() == placeholder) {
                 fetchAsync(ctx, "/incidents/stats", json -> Platform.runLater(() -> {
                     if (json == null) {
-                        root.setCenter(errorBox("Impossible de charger les statistiques d'incidents."));
+                        root.setCenter(errorBox(I18nManager.tr("plugin.social.error.incidentStats")));
                         return;
                     }
                     VBox content = new VBox(16);
                     content.setPadding(new Insets(4, 0, 0, 0));
 
                     int total = json.get("total").asInt();
-                    content.getChildren().add(sectionTitle("Total incidents : " + total));
+                    content.getChildren().add(sectionTitle(I18nManager.tr("plugin.social.section.incidentsTotal", total)));
 
                     HBox chartsBox = new HBox(24);
 
-                    PieChart statusChart = buildPieChart(json.get("byStatus"), "Par statut");
+                    PieChart statusChart = buildPieChart(json.get("byStatus"), I18nManager.tr("plugin.social.chart.byStatus"));
                     chartsBox.getChildren().add(statusChart);
 
-                    PieChart catChart = buildPieChart(json.get("byCategory"), "Par catégorie");
+                    PieChart catChart = buildPieChart(json.get("byCategory"), I18nManager.tr("plugin.social.chart.byCategory"));
                     chartsBox.getChildren().add(catChart);
 
                     content.getChildren().add(chartsBox);
 
                     TableView<JsonNode> table = new TableView<>();
-                    table.setPrefHeight(280);
-                    TableColumn<JsonNode, String> catCol = new TableColumn<>("Catégorie");
+                    stretchColumns(table);
+                    TableColumn<JsonNode, String> catCol = new TableColumn<>(I18nManager.tr("common.field.category"));
                     catCol.setCellValueFactory(d -> {
                         JsonNode n = d.getValue();
                         return new SimpleStringProperty(n.has("cat") ? n.get("cat").asText() : "");
                     });
-                    TableColumn<JsonNode, String> countCol = new TableColumn<>("Nombre");
+                    TableColumn<JsonNode, String> countCol = new TableColumn<>(I18nManager.tr("plugin.social.col.count"));
                     countCol.setCellValueFactory(d -> {
                         JsonNode n = d.getValue();
                         return new SimpleStringProperty(n.has("cnt") ? String.valueOf(n.get("cnt").asInt()) : "0");
@@ -236,7 +249,7 @@ public class SocialAnalysisPlugin implements Plugin {
                         }
                     }
                     table.setItems(items);
-                    VBox.setVgrow(table, Priority.ALWAYS);
+                    sizeToRowCount(table, items.size(), 280);
                     content.getChildren().add(table);
 
                     root.setCenter(content);
@@ -247,7 +260,7 @@ public class SocialAnalysisPlugin implements Plugin {
     }
 
     private Tab buildConversationsTab(AppContext ctx) {
-        Tab tab = new Tab("Messagerie");
+        Tab tab = new Tab(I18nManager.tr("plugin.social.tab.conversations"));
         tab.setClosable(false);
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(16));
@@ -259,7 +272,7 @@ public class SocialAnalysisPlugin implements Plugin {
             if (now && root.getCenter() == placeholder) {
                 fetchAsync(ctx, "/conversations?limit=100", json -> Platform.runLater(() -> {
                     if (json == null || !json.has("data")) {
-                        root.setCenter(errorBox("Impossible de charger les conversations."));
+                        root.setCenter(errorBox(I18nManager.tr("plugin.social.error.conversations")));
                         return;
                     }
                     JsonNode data = json.get("data");
@@ -275,16 +288,16 @@ public class SocialAnalysisPlugin implements Plugin {
                     content.setPadding(new Insets(4, 0, 0, 0));
 
                     content.getChildren().add(sectionTitle(
-                            String.format("Total : %d  |  Directes : %d  |  Groupe : %d",
-                                    total, direct, group)));
+                            I18nManager.tr("plugin.social.section.conversationsTotal", total, direct, group)));
 
                     TableView<JsonNode> table = new TableView<>();
                     table.setPrefHeight(460);
-                    TableColumn<JsonNode, String> idCol = jsonCol("ID", "id");
+                    stretchColumns(table);
+                    TableColumn<JsonNode, String> idCol = jsonCol(I18nManager.tr("common.field.id"), "id");
                     idCol.setPrefWidth(260);
-                    TableColumn<JsonNode, String> typeCol = jsonCol("Type", "type");
+                    TableColumn<JsonNode, String> typeCol = jsonCol(I18nManager.tr("common.field.type"), "type");
                     typeCol.setPrefWidth(80);
-                    TableColumn<JsonNode, String> partCol = new TableColumn<>("Participants");
+                    TableColumn<JsonNode, String> partCol = new TableColumn<>(I18nManager.tr("plugin.social.col.participants"));
                     partCol.setCellValueFactory(d -> {
                         JsonNode n = d.getValue();
                         int cnt = (n != null && n.has("participants"))
@@ -292,11 +305,11 @@ public class SocialAnalysisPlugin implements Plugin {
                         return new SimpleStringProperty(String.valueOf(cnt));
                     });
                     partCol.setPrefWidth(100);
-                    TableColumn<JsonNode, String> nameCol = jsonCol("Nom", "name");
+                    TableColumn<JsonNode, String> nameCol = jsonCol(I18nManager.tr("plugin.social.col.name"), "name");
                     nameCol.setPrefWidth(140);
-                    TableColumn<JsonNode, String> districtCol = jsonCol("District", "districtId");
+                    TableColumn<JsonNode, String> districtCol = jsonCol(I18nManager.tr("common.field.district"), "districtId");
                     districtCol.setPrefWidth(260);
-                    TableColumn<JsonNode, String> lastCol = jsonCol("Dernier message", "lastMessageAt");
+                    TableColumn<JsonNode, String> lastCol = jsonCol(I18nManager.tr("plugin.social.col.lastMessage"), "lastMessageAt");
                     lastCol.setPrefWidth(180);
                     table.getColumns().addAll(idCol, typeCol, partCol, nameCol, districtCol, lastCol);
 
@@ -314,7 +327,7 @@ public class SocialAnalysisPlugin implements Plugin {
     }
 
     private Tab buildActivityTab(AppContext ctx) {
-        Tab tab = new Tab("Activité");
+        Tab tab = new Tab(I18nManager.tr("plugin.social.tab.activity"));
         tab.setClosable(false);
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(16));
@@ -334,27 +347,33 @@ public class SocialAnalysisPlugin implements Plugin {
                             int evtTotal = eventsJson.get("total").asInt();
 
                             content.getChildren().add(sectionTitle(
-                                    "Événements  —  Total : " + evtTotal + "  |  Affichés : " + evts.size()));
+                                    I18nManager.tr("plugin.social.section.eventsTotal", evtTotal, evts.size())));
+
+                            HBox evtBox = new HBox(24);
 
                             PieChart evtStatusChart = buildPieChart(
-                                    countByKey(evts, "status"), "Par statut");
+                                    countByKey(evts, "status"), I18nManager.tr("plugin.social.chart.byStatus"));
                             if (!evtStatusChart.getData().isEmpty()) {
-                                content.getChildren().add(evtStatusChart);
+                                evtBox.getChildren().add(evtStatusChart);
                             }
 
                             TableView<JsonNode> evtTable = new TableView<>();
                             evtTable.setPrefHeight(200);
+                            stretchColumns(evtTable);
                             evtTable.getColumns().addAll(
-                                    jsonCol("Titre", "title"),
-                                    jsonCol("Lieu", "location"),
-                                    jsonCol("Statut", "status"),
-                                    jsonCol("Date", "eventDate"),
-                                    jsonCol("Places dispo.", "remainingSeats")
+                                    jsonCol(I18nManager.tr("plugin.social.col.title"), "title"),
+                                    jsonCol(I18nManager.tr("plugin.social.col.location"), "location"),
+                                    jsonCol(I18nManager.tr("common.field.status"), "status"),
+                                    jsonCol(I18nManager.tr("common.field.date"), "eventDate"),
+                                    jsonCol(I18nManager.tr("plugin.social.col.seatsAvailable"), "remainingSeats")
                             );
                             ObservableList<JsonNode> evtItems = FXCollections.observableArrayList();
                             for (JsonNode node : evts) evtItems.add(node);
                             evtTable.setItems(evtItems);
-                            content.getChildren().add(evtTable);
+                            HBox.setHgrow(evtTable, Priority.ALWAYS);
+                            evtBox.getChildren().add(evtTable);
+
+                            content.getChildren().add(evtBox);
                         }
 
                         if (votesJson != null && votesJson.has("data")) {
@@ -362,33 +381,38 @@ public class SocialAnalysisPlugin implements Plugin {
                             int voteTotal = votesJson.get("total").asInt();
 
                             content.getChildren().add(sectionTitle(
-                                    "Votes  —  Total : " + voteTotal + "  |  Affichés : " + votes.size()));
+                                    I18nManager.tr("plugin.social.section.votesTotal", voteTotal, votes.size())));
+
+                            HBox voteBox = new HBox(24);
 
                             PieChart voteStatusChart = buildPieChart(
-                                    countByKey(votes, "status"), "Par statut");
+                                    countByKey(votes, "status"), I18nManager.tr("plugin.social.chart.byStatus"));
                             if (!voteStatusChart.getData().isEmpty()) {
-                                content.getChildren().add(voteStatusChart);
+                                voteBox.getChildren().add(voteStatusChart);
                             }
 
                             TableView<JsonNode> voteTable = new TableView<>();
                             voteTable.setPrefHeight(200);
+                            stretchColumns(voteTable);
                             voteTable.getColumns().addAll(
-                                    jsonCol("Question", "question"),
-                                    jsonCol("Type", "voteType"),
-                                    jsonCol("Statut", "status"),
-                                    jsonCol("Début", "startDate"),
-                                    jsonCol("Fin", "endDate")
+                                    jsonCol(I18nManager.tr("plugin.social.col.question"), "question"),
+                                    jsonCol(I18nManager.tr("common.field.type"), "voteType"),
+                                    jsonCol(I18nManager.tr("common.field.status"), "status"),
+                                    jsonCol(I18nManager.tr("plugin.social.col.start"), "startDate"),
+                                    jsonCol(I18nManager.tr("plugin.social.col.end"), "endDate")
                             );
                             ObservableList<JsonNode> voteItems = FXCollections.observableArrayList();
                             for (JsonNode node : votes) voteItems.add(node);
                             voteTable.setItems(voteItems);
-                            VBox.setVgrow(voteTable, Priority.ALWAYS);
-                            content.getChildren().add(voteTable);
+                            HBox.setHgrow(voteTable, Priority.ALWAYS);
+                            voteBox.getChildren().add(voteTable);
+
+                            content.getChildren().add(voteBox);
                         }
 
                         if (content.getChildren().isEmpty()) {
                             content.getChildren().add(errorBox(
-                                    "Aucune donnée d'activité disponible."));
+                                    I18nManager.tr("plugin.social.error.activity")));
                         }
 
                         root.setCenter(content);

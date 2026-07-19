@@ -16,14 +16,15 @@
 				<Insets top="14" right="20" bottom="14" left="20"/>
 			</padding>
 
-			<Label text="Paramètres" styleClass="header-title"/>
+			<Label text="%common.page.settings" styleClass="header-title"/>
 			<Region HBox.hgrow="ALWAYS"/>
-			<Button text="Fermer" onAction="#onCloseClick" styleClass="button-ghost"/>
+			<Button text="%common.action.close" onAction="#onCloseClick" styleClass="button-ghost"/>
 		</HBox>
 	</top>
 
 	<!-- ══════════════ CONTENU ══════════════ -->
 	<center>
+		<ScrollPane fitToWidth="true" styleClass="scroll-transparent">
 		<VBox spacing="16">
 			<padding>
 				<Insets top="24" right="24" bottom="24" left="24"/>
@@ -35,7 +36,7 @@
 					<Insets top="16" right="16" bottom="16" left="16"/>
 				</padding>
 
-				<Label text="Configuration de l’API" styleClass="card-title"/>
+				<Label text="%settings.api.card.title" styleClass="card-title"/>
 
 				<GridPane hgap="12" vgap="10">
 					<columnConstraints>
@@ -43,32 +44,32 @@
 						<ColumnConstraints hgrow="ALWAYS"/>
 					</columnConstraints>
 
-					<Label text="Schéma" GridPane.rowIndex="0" GridPane.columnIndex="0"
+					<Label text="%settings.api.scheme.label" GridPane.rowIndex="0" GridPane.columnIndex="0"
 						   styleClass="field-label"/>
 					<ChoiceBox fx:id="schemeChoice" prefWidth="200"
 							   GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-					<Label text="Hôte" GridPane.rowIndex="1" GridPane.columnIndex="0"
+					<Label text="%settings.api.host.label" GridPane.rowIndex="1" GridPane.columnIndex="0"
 						   styleClass="field-label"/>
-					<TextField fx:id="hostField" promptText="ex: api.exemple.com ou https://api.exemple.com"
+					<TextField fx:id="hostField" promptText="%settings.api.host.prompt"
 							   GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-					<Label text="Port (optionnel)" GridPane.rowIndex="2" GridPane.columnIndex="0"
+					<Label text="%settings.api.port.label" GridPane.rowIndex="2" GridPane.columnIndex="0"
 						   styleClass="field-label"/>
-					<TextField fx:id="portField" promptText="ex: 3000 (laisser vide pour 80/443)"
+					<TextField fx:id="portField" promptText="%settings.api.port.prompt"
 							   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 				</GridPane>
 
 				<Separator/>
 
 				<HBox spacing="8" alignment="CENTER_LEFT">
-					<Label text="URL de base :" styleClass="field-label"/>
+					<Label text="%settings.api.baseUrl.label" styleClass="field-label"/>
 					<Label fx:id="baseUrlLabel" text="—"
 						   style="-fx-font-weight: bold;" styleClass="header-title"/>
 				</HBox>
 
 				<HBox spacing="10" alignment="CENTER_LEFT">
-					<Button text="Tester la connexion" onAction="#onTestConnectionClick"
+					<Button text="%settings.api.testConnection.button" onAction="#onTestConnectionClick"
 							styleClass="button-primary"/>
 					<Label fx:id="testResultLabel" text=""
 						   style="-fx-font-size: 12px;"/>
@@ -81,7 +82,7 @@
 					<Insets top="16" right="16" bottom="16" left="16"/>
 				</padding>
 
-				<Label text="Apparence" styleClass="card-title"/>
+				<Label text="%settings.appearance.card.title" styleClass="card-title"/>
 
 				<GridPane hgap="12" vgap="10">
 					<columnConstraints>
@@ -89,23 +90,53 @@
 						<ColumnConstraints hgrow="ALWAYS"/>
 					</columnConstraints>
 
-					<Label text="Thème" GridPane.rowIndex="0" GridPane.columnIndex="0"
+					<Label text="%settings.appearance.theme.label" GridPane.rowIndex="0" GridPane.columnIndex="0"
 						   styleClass="field-label"/>
 					<HBox spacing="8" alignment="CENTER_LEFT"
 						  GridPane.rowIndex="0" GridPane.columnIndex="1">
 						<ComboBox fx:id="themeCombo" prefWidth="240"/>
-						<Button text="Recharger" onAction="#onReloadThemesClick"
+						<Button text="%common.action.reload" onAction="#onReloadThemesClick"
 								styleClass="button-ghost"/>
 					</HBox>
 				</GridPane>
 
 				<Label fx:id="themeHintLabel" styleClass="text-faint"
-					   text="Déposez vos fichiers .css dans le dossier ./themes/ puis cliquez sur Recharger."
+					   text="%settings.appearance.hint"
+					   wrapText="true"/>
+			</VBox>
+
+			<!-- ─── Langue ─── -->
+			<VBox spacing="14" styleClass="card">
+				<padding>
+					<Insets top="16" right="16" bottom="16" left="16"/>
+				</padding>
+
+				<Label text="%settings.language.card.title" styleClass="card-title"/>
+
+				<GridPane hgap="12" vgap="10">
+					<columnConstraints>
+						<ColumnConstraints minWidth="140"/>
+						<ColumnConstraints hgrow="ALWAYS"/>
+					</columnConstraints>
+
+					<Label text="%settings.language.label" GridPane.rowIndex="0" GridPane.columnIndex="0"
+						   styleClass="field-label"/>
+					<HBox spacing="8" alignment="CENTER_LEFT"
+						  GridPane.rowIndex="0" GridPane.columnIndex="1">
+						<ComboBox fx:id="languageCombo" prefWidth="240"/>
+						<Button text="%common.action.apply" onAction="#onApplyLanguageClick"
+								styleClass="button-ghost"/>
+					</HBox>
+				</GridPane>
+
+				<Label fx:id="languageHintLabel" styleClass="text-faint"
+					   text="%settings.language.hint"
 					   wrapText="true"/>
 			</VBox>
 
 			<Region VBox.vgrow="ALWAYS"/>
 		</VBox>
+		</ScrollPane>
 	</center>
 
 	<!-- ══════════════ ACTIONS ══════════════ -->
@@ -115,10 +146,10 @@
 				<Insets top="12" right="16" bottom="12" left="16"/>
 			</padding>
 
-			<Button text="Réinitialiser" onAction="#onResetClick" styleClass="button-ghost"/>
+			<Button text="%common.action.reset" onAction="#onResetClick" styleClass="button-ghost"/>
 			<Region HBox.hgrow="ALWAYS"/>
-			<Button text="Annuler" onAction="#onCancelClick" styleClass="button-ghost"/>
-			<Button text="Enregistrer" onAction="#onSaveClick" styleClass="button-success"/>
+			<Button text="%common.action.cancel" onAction="#onCancelClick" styleClass="button-ghost"/>
+			<Button text="%common.action.save" onAction="#onSaveClick" styleClass="button-success"/>
 		</HBox>
 	</bottom>
 

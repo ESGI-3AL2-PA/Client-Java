@@ -2,6 +2,7 @@ package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.MainApp;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.service.SyncService;
 import com.connectedneighbours.service.SyncStatus;
 import javafx.fxml.FXML;
@@ -124,29 +125,29 @@ public class BaseController {
     protected final void updateSyncUI(SyncStatus status) {
         switch (status) {
             case OFFLINE -> {
-                syncStatusLabel.setText("Hors-ligne");
+                syncStatusLabel.setText(I18nManager.tr("common.sync.offline"));
                 syncStatusDot.setFill(Color.GRAY);
                 syncNowButton.setDisable(false);
             }
             case SYNCING -> {
-                syncStatusLabel.setText("Synchronisation en cours...");
+                syncStatusLabel.setText(I18nManager.tr("common.sync.syncing"));
                 syncStatusDot.setFill(Color.ORANGE);
                 syncNowButton.setDisable(true);
             }
             case SUCCESS -> {
-                syncStatusLabel.setText("Synchronisé");
+                syncStatusLabel.setText(I18nManager.tr("common.sync.success"));
                 syncStatusDot.setFill(Color.GREEN);
                 syncNowButton.setDisable(false);
-                lastSyncLabel.setText("Dernière sync : " + LocalDateTime.now().format(DATE_FMT));
+                lastSyncLabel.setText(I18nManager.tr("common.sync.lastSync", LocalDateTime.now().format(DATE_FMT)));
                 onSyncSuccess();
             }
             case ERROR -> {
-                syncStatusLabel.setText("Erreur de synchronisation");
+                syncStatusLabel.setText(I18nManager.tr("common.sync.error"));
                 syncStatusDot.setFill(Color.RED);
                 syncNowButton.setDisable(false);
             }
             case AUTH_REQUIRED -> {
-                syncStatusLabel.setText("Reconnexion requise");
+                syncStatusLabel.setText(I18nManager.tr("common.sync.authRequired"));
                 syncStatusDot.setFill(Color.ORANGE);
                 syncNowButton.setDisable(true);
                 triggerRelogin();
@@ -186,7 +187,7 @@ public class BaseController {
      */
     protected void showError(String msg) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Erreur");
+        alert.setTitle(I18nManager.tr("common.error.title"));
         alert.setContentText(msg);
         alert.showAndWait();
     }

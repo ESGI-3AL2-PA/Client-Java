@@ -23,7 +23,7 @@
                 </padding>
 
                 <!-- Titre de page -->
-                <Label text="Tableau de bord" styleClass="page-title"/>
+                <Label text="%dashboard.title" styleClass="page-title"/>
 
                 <!-- ── CARTES DE STATISTIQUES ── -->
                 <HBox spacing="16">
@@ -32,7 +32,7 @@
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="Incidents ouverts" styleClass="card-label"/>
+                        <Label text="%dashboard.card.openIncidents.label" styleClass="card-label"/>
                         <Label fx:id="statOpenIncidents" text="—"
                                styleClass="card-value,card-value-open"/>
                         <Label fx:id="statOpenTrend" text="" styleClass="card-trend"/>
@@ -43,7 +43,7 @@
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="En cours" styleClass="card-label"/>
+                        <Label text="%dashboard.card.inProgress.label" styleClass="card-label"/>
                         <Label fx:id="statInProgress" text="—"
                                styleClass="card-value,card-value-progress"/>
                         <Label fx:id="statInProgressTrend" text="" styleClass="card-trend"/>
@@ -54,7 +54,7 @@
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="Résolus (30j)" styleClass="card-label"/>
+                        <Label text="%dashboard.card.resolved.label" styleClass="card-label"/>
                         <Label fx:id="statResolved" text="—"
                                styleClass="card-value,card-value-resolved"/>
                         <Label fx:id="statResolvedTrend" text="" styleClass="card-trend"/>
@@ -65,10 +65,10 @@
                         <padding>
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
-                        <Label text="Non synchronisés" styleClass="card-label"/>
+                        <Label text="%dashboard.card.unsynced.label" styleClass="card-label"/>
                         <Label fx:id="statUnsynced" text="—"
                                styleClass="card-value,card-value-unsynced"/>
-                        <Label text="En attente de sync" styleClass="card-trend"/>
+                        <Label text="%dashboard.card.unsynced.trend" styleClass="card-trend"/>
                     </VBox>
                 </HBox>
 
@@ -82,21 +82,21 @@
                         </padding>
 
                         <HBox alignment="CENTER_LEFT" spacing="8">
-                            <Label text="Incidents récents" styleClass="card-title"/>
+                            <Label text="%dashboard.recentIncidents.title" styleClass="card-title"/>
                             <Region HBox.hgrow="ALWAYS"/>
-                            <Button text="Voir tout" onAction="#onIncidentsClick"
+                            <Button text="%common.action.viewAll" onAction="#onIncidentsClick"
                                     styleClass="link-button"/>
                         </HBox>
 
                         <TableView fx:id="incidentsTable"
                                    prefHeight="280" styleClass="table-transparent">
                             <columns>
-                                <TableColumn fx:id="colCategory" text="Catégorie" prefWidth="220"/>
-                                <TableColumn fx:id="colStatus" text="Statut" prefWidth="100"/>
-                                <TableColumn fx:id="colDate" text="Date" prefWidth="140"/>
+                                <TableColumn fx:id="colCategory" text="%common.field.category" prefWidth="220"/>
+                                <TableColumn fx:id="colStatus" text="%common.field.status" prefWidth="100"/>
+                                <TableColumn fx:id="colDate" text="%common.field.date" prefWidth="140"/>
                             </columns>
                             <placeholder>
-                                <Label text="Aucun incident" styleClass="text-faint"/>
+                                <Label text="%dashboard.table.placeholder" styleClass="text-faint"/>
                             </placeholder>
                         </TableView>
                     </VBox>
@@ -107,10 +107,10 @@
                             <Insets top="16" right="16" bottom="16" left="16"/>
                         </padding>
 
-                        <Label text="Alertes" styleClass="card-title"/>
+                        <Label text="%dashboard.alerts.title" styleClass="card-title"/>
 
                         <VBox fx:id="alertsContainer" spacing="8">
-                            <Label text="Chargement..." styleClass="text-faint"/>
+                            <Label text="%common.sync.loading" styleClass="text-faint"/>
                         </VBox>
                     </VBox>
                 </HBox>
@@ -120,10 +120,9 @@
                     <padding>
                         <Insets top="16" right="16" bottom="16" left="16"/>
                     </padding>
-                    <Label text="Actions rapides" styleClass="card-title"/>
+                    <Label text="%dashboard.quickActions.title" styleClass="card-title"/>
                     <HBox spacing="10">
-                        <Button text="↗ Exporter stats"
-                                onAction="#onExportClick" styleClass="button-accent"/>
+                        <Button text="%dashboard.quickActions.export" onAction="#onExportClick" styleClass="button-accent"/>
                     </HBox>
                 </VBox>
 
@@ -138,10 +137,10 @@
                 <Insets top="8" right="8" bottom="8" left="8"/>
             </padding>
             <Circle fx:id="syncStatusDot" radius="6" fill="GRAY"/>
-            <Label fx:id="syncStatusLabel" text="Hors-ligne" styleClass="status-bar-label"/>
+            <Label fx:id="syncStatusLabel" text="%common.sync.offline" styleClass="status-bar-label"/>
             <Region HBox.hgrow="ALWAYS"/>
             <Label fx:id="lastSyncLabel" styleClass="status-bar-secondary"/>
-            <Button fx:id="syncNowButton" text="Synchroniser maintenant"
+            <Button fx:id="syncNowButton" text="%common.sync.button"
                     onAction="#onSyncNowClick" styleClass="button-ghost"/>
         </HBox>
     </bottom>
