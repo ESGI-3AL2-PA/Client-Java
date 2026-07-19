@@ -189,11 +189,210 @@
 /* TableView sans fond */
 .table-transparent { -fx-background-color: transparent; }
 
+/* ── TableView (dashboard, incidents) ── */
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1a1a2e;
+    -fx-border-color: #e8e8e8;
+}
+.table-view > * {
+    -fx-background-color: #ffffff;
+}
+.table-view .fill {
+    -fx-background-color: #f5f5f5;
+}
+.table-view .placeholder-label {           /* texte affiché quand le tableau est vide */
+    -fx-text-fill: #aaaaaa;
+}
+.table-view .corner {
+    -fx-background-color: #f5f5f5;
+}
+.table-view .column-header-background {
+    -fx-background-color: #f5f5f5;
+}
+.table-view .column-header-background > * {
+    -fx-background-color: #f5f5f5;
+}
+.table-view .column-header {                /* en-tête de colonne */
+    -fx-background-color: #f5f5f5;
+    -fx-border-color: transparent #e8e8e8 #e8e8e8 transparent;
+    -fx-border-width: 0 1 1 0;
+}
+.table-view .column-header .label {
+    -fx-text-fill: #444444;
+    -fx-font-weight: bold;
+}
+.table-view .show-hide-columns-button {     /* bouton "+" de sélection des colonnes */
+    -fx-background-color: #f5f5f5;
+    -fx-border-color: #e8e8e8;
+}
+.table-view .show-hide-columns-button .arrow {
+    -fx-background-color: #888888;
+}
+.table-view .table-row-cell {               /* ligne du tableau */
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1a1a2e;
+}
+.table-view .table-row-cell:odd {           /* effet zébré */
+    -fx-background-color: #fafafa;
+}
+.table-view .table-row-cell:selected {
+    -fx-background-color: #4a6fa5;
+    -fx-text-fill: #ffffff;
+}
+.table-view .table-row-cell:empty {
+    -fx-background-color: #ffffff;
+}
+.table-view .table-cell {                   /* cellule */
+    -fx-text-fill: #1a1a2e;
+    -fx-border-color: transparent #eeeeee transparent transparent;
+    -fx-border-width: 0 1 0 0;
+}
+.table-view .table-row-cell:selected .table-cell {
+    -fx-text-fill: #ffffff;
+}
+.table-view .table-row-cell:selected .text {
+    -fx-fill: #ffffff;
+}
+
 /* Label de champ dans une GridPane (settings) */
 .field-label { -fx-text-fill: #444444; }
+
+/* ── TextField / TextArea (settings, formulaires) ── */
+.text-field, .text-area {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1a1a2e;
+    -fx-prompt-text-fill: #aaaaaa;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.text-field:focused, .text-area:focused {
+    -fx-border-color: #4a6fa5;
+}
+
+/* ── ChoiceBox ── */
+.choice-box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.choice-box .label {
+    -fx-text-fill: #1a1a2e;
+}
+/* Popup d'une ChoiceBox = ContextMenu (pas une ListView) */
+.context-menu {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+}
+.context-menu .menu-item {
+    -fx-background-color: transparent;
+}
+.context-menu .menu-item .label {
+    -fx-text-fill: #1a1a2e;
+}
+.context-menu .menu-item:hover,
+.context-menu .menu-item:focused {
+    -fx-background-color: #4a6fa5;
+}
+.context-menu .menu-item:hover .label,
+.context-menu .menu-item:focused .label {
+    -fx-text-fill: #ffffff;
+}
+
+/* ── MenuButton ── */
+.menu-button .label {
+    -fx-text-fill: #1a1a2e;
+}
+.menu-button .arrow-button .arrow {
+    -fx-background-color: #888888;
+}
+.menu-item .label {
+    -fx-text-fill: #1a1a2e;
+}
+.menu-item:hover .label,
+.menu-item:focused .label {
+    -fx-text-fill: #ffffff;
+}
+.menu-item:hover,
+.menu-item:focused {
+    -fx-background-color: #4a6fa5;
+}
+
+/* ── ComboBox ── */
+.combo-box {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+}
+.combo-box .list-cell {
+    -fx-text-fill: #1a1a2e;
+}
+.combo-box-popup .list-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #e0e0e0;
+}
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #1a1a2e;
+    -fx-background-color: #ffffff;
+}
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:selected {
+    -fx-background-color: #4a6fa5;
+    -fx-text-fill: #ffffff;
+}
+
+/* ── Separator ── */
+.separator .line {
+    -fx-border-color: #e0e0e0;
+    -fx-border-width: 1 0 0 0;
+}
 
 /* Écran d'attente login SSO */
 .waiting-label {
     -fx-font-size: 14px;
     -fx-text-fill: #555555;
+}
+
+/* ── DialogPane (pop-ups Nouvel incident / Édition) ── */
+.dialog-pane {
+    -fx-background-color: #f0f2f5;
+}
+.dialog-pane .header-panel {                /* bandeau titre du dialogue */
+    -fx-background-color: #ffffff;
+}
+.dialog-pane .header-panel .label {
+    -fx-text-fill: #1a1a2e;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+.dialog-pane .content {                     /* zone de contenu (formulaire) */
+    -fx-background-color: #f0f2f5;
+}
+.dialog-pane .content .label {
+    -fx-text-fill: #444444;
+}
+.dialog-pane .button-bar {                  /* barre des boutons OK/Annuler */
+    -fx-background-color: #f5f5f5;
+}
+.dialog-pane .button-bar .button {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #1a1a2e;
+    -fx-border-color: #e0e0e0;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+.dialog-pane .button-bar .button:hover {
+    -fx-background-color: #f0f2f5;
+}
+.dialog-pane .button-bar .button:default {  /* bouton par défaut (ex: OK) */
+    -fx-background-color: #4a6fa5;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: transparent;
+}
+.dialog-pane .button-bar .button:default:hover {
+    -fx-background-color: #5a7fb5;
 }
