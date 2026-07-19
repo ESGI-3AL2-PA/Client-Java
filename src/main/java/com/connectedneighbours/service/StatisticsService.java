@@ -1,10 +1,14 @@
 package com.connectedneighbours.service;
 
+import com.connectedneighbours.config.JacksonConfig;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.Statistic;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.StatisticRepository;
+import com.connectedneighbours.repository.SyncApiClient;
 import com.connectedneighbours.repository.UserRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -12,39 +16,51 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Calcule les statistiques <em>localement</em>, depuis H2 (§9.5).
+ * Calcule les statistiques du quartier et les écrit dans la table
+ * {@code statistics} historisée, que l'écran Statistiques et l'export lisent
+ * déjà.
  *
- * <p>Puisque les incidents et les utilisateurs descendent désormais
- * intégralement dans la base locale, il n'y a plus de raison d'appeler une
- * agrégation serveur : le calcul local marche hors-ligne et ne peut pas
- * diverger de ce que l'opérateur a sous les yeux.</p>
+ * <p>Incidents et utilisateurs descendent intégralement dans la base locale :
+ * leur total est calculé depuis H2 (§9.5), ce qui marche hors-ligne et ne
+ * peut pas diverger de ce que l'opérateur a sous les yeux.</p>
+ *
+ * <p>Annonces, événements et votes n'ont pas de table locale — leur total est
+ * lu directement sur l'api à chaque cycle. {@link #recompute()} n'est appelé
+ * que quand {@code SyncService} a déjà vérifié la connectivité, donc l'appel
+ * réseau est sans risque ; un échec ponctuel (ex. 401) est tracé et laisse
+ * simplement la mesure du jour absente, sans faire échouer les autres
+ * métriques.</p>
  *
  * <p>Ce sont des statistiques <em>de quartier</em> : le flux étant limité au
  * quartier de l'appelant (§5.5), la base locale ne contient que celui-ci — ce
  * qui correspond à ce que le même admin voit sur le web.</p>
- *
- * <p>Les résultats sont écrits dans la table {@code statistics} historisée,
- * que l'écran Statistiques et l'export lisent déjà.</p>
  */
 public class StatisticsService {
 
+    private static final Logger LOGGER = Logger.getLogger(StatisticsService.class.getName());
     private static final DateTimeFormatter PERIOD_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     private final IncidentRepository incidentRepo;
     private final UserRepository userRepo;
     private final StatisticRepository statisticRepo;
+    private final SyncApiClient apiClient;
+    private final ObjectMapper mapper;
 
-    public StatisticsService() {
-        this(new IncidentRepository(), new UserRepository(), new StatisticRepository());
+    public StatisticsService(SyncApiClient apiClient) {
+        this(new IncidentRepository(), new UserRepository(), new StatisticRepository(), apiClient);
     }
 
     public StatisticsService(IncidentRepository incidentRepo, UserRepository userRepo,
-                             StatisticRepository statisticRepo) {
+                             StatisticRepository statisticRepo, SyncApiClient apiClient) {
         this.incidentRepo = incidentRepo;
         this.userRepo = userRepo;
         this.statisticRepo = statisticRepo;
+        this.apiClient = apiClient;
+        this.mapper = JacksonConfig.get();
     }
 
     /**
@@ -67,7 +83,25 @@ public class StatisticsService {
         byStatus.forEach((status, count) -> metrics.put("incidents.status." + status, count));
         byCategory.forEach((category, count) -> metrics.put("incidents.category." + category, count));
 
+        fetchRemoteTotal(metrics, "/listings?page=1&limit=1", "listings.total");
+        fetchRemoteTotal(metrics, "/events?page=1&limit=1", "events.total");
+        fetchRemoteTotal(metrics, "/votes?page=1&limit=1", "votes.total");
+
         metrics.forEach((key, value) -> upsert(key, value, period));
+    }
+
+    /**
+     * Lit {@code total} sur un endpoint paginé de l'api. En cas d'échec, la
+     * métrique est simplement omise de ce cycle — {@code recompute()}
+     * continue avec les autres.
+     */
+    private void fetchRemoteTotal(Map<String, Double> metrics, String endpoint, String metricKey) {
+        try {
+            JsonNode root = mapper.readTree(apiClient.get(endpoint));
+            metrics.put(metricKey, root.path("total").asDouble(0));
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Échec de la récupération de la statistique depuis " + endpoint, e);
+        }
     }
 
     private void increment(Map<String, Double> counts, String key) {
