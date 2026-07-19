@@ -122,10 +122,7 @@
                     </padding>
                     <Label text="%dashboard.quickActions.title" styleClass="card-title"/>
                     <HBox spacing="10">
-                        <Button text="%common.action.newIncident"
-                                onAction="#onNewIncidentClick" styleClass="button-primary"/>
-                        <Button text="%dashboard.quickActions.export"
-                                onAction="#onExportClick" styleClass="button-accent"/>
+                        <Button text="%dashboard.quickActions.export" onAction="#onExportClick" styleClass="button-accent"/>
                     </HBox>
                 </VBox>
 
