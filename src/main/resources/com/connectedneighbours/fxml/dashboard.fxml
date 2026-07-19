@@ -122,8 +122,6 @@
                     </padding>
                     <Label text="Actions rapides" styleClass="card-title"/>
                     <HBox spacing="10">
-                        <Button text="+ Nouvel incident"
-                                onAction="#onNewIncidentClick" styleClass="button-primary"/>
                         <Button text="↗ Exporter stats"
                                 onAction="#onExportClick" styleClass="button-accent"/>
                     </HBox>

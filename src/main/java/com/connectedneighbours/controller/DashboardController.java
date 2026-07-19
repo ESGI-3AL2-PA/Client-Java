@@ -281,13 +281,7 @@ public class DashboardController extends BaseController {
 
     }
 
-    @FXML
-    public void onNewIncidentClick() {
-        // TODO : ouvrir une dialog de création d'incident
-        System.out.println("[TODO] Créer un nouvel incident");
-    }
-
-    //  Helpers couleurs alertes 
+    //  Helpers couleurs alertes
     private String alertColor(String type) {
         return switch (type != null ? type : "") {
             case "DANGER" -> "#e74c3c";
