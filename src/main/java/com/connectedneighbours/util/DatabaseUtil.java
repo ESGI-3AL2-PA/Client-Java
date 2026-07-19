@@ -19,10 +19,12 @@ public class DatabaseUtil {
      * @throws SQLException Si une erreur survient
      */
     public static int executeUpdate(String sql, Object... params) throws SQLException {
-        Connection conn = DatabaseManager.getConnection();
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            setParameters(stmt, params);
-            return stmt.executeUpdate();
+        synchronized (DatabaseManager.class) {
+            Connection conn = DatabaseManager.getConnection();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                setParameters(stmt, params);
+                return stmt.executeUpdate();
+            }
         }
     }
 
@@ -36,15 +38,17 @@ public class DatabaseUtil {
      * @throws SQLException Si une erreur survient
      */
     public static <T> List<T> executeQuery(String sql, RowMapper<T> rowMapper, Object... params) throws SQLException {
-        Connection conn = DatabaseManager.getConnection();
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            setParameters(stmt, params);
-            try (ResultSet rs = stmt.executeQuery()) {
-                List<T> results = new ArrayList<>();
-                while (rs.next()) {
-                    results.add(rowMapper.mapRow(rs));
+        synchronized (DatabaseManager.class) {
+            Connection conn = DatabaseManager.getConnection();
+            try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+                setParameters(stmt, params);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    List<T> results = new ArrayList<>();
+                    while (rs.next()) {
+                        results.add(rowMapper.mapRow(rs));
+                    }
+                    return results;
                 }
-                return results;
             }
         }
     }
@@ -63,11 +67,13 @@ public class DatabaseUtil {
         if (whereClause != null && !whereClause.trim().isEmpty()) {
             sql.append(" WHERE ").append(whereClause);
         }
-        Connection conn = DatabaseManager.getConnection();
-        try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-            setParameters(stmt, params);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
+        synchronized (DatabaseManager.class) {
+            Connection conn = DatabaseManager.getConnection();
+            try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+                setParameters(stmt, params);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    return rs.next() ? rs.getInt(1) : 0;
+                }
             }
         }
     }
