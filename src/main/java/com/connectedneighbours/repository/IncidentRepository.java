@@ -173,7 +173,7 @@ public class IncidentRepository {
             List<Incident> incidents = DatabaseUtil.executeQuery(sql, this::extractIncident, mongoId);
             return incidents.isEmpty() ? Optional.empty() : Optional.of(incidents.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -208,7 +208,7 @@ public class IncidentRepository {
                     baseUpdatedAt
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -229,7 +229,7 @@ public class IncidentRepository {
                     mongoId
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -242,7 +242,7 @@ public class IncidentRepository {
         try {
             DatabaseUtil.executeUpdate(sql, mongoId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 

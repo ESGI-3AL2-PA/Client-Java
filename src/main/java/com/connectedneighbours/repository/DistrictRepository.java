@@ -74,7 +74,7 @@ public class DistrictRepository {
             List<District> districts = DatabaseUtil.executeQuery(sql, this::extractDistrict, mongoId);
             return districts.isEmpty() ? Optional.empty() : Optional.of(districts.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -99,7 +99,7 @@ public class DistrictRepository {
                     mongoId
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -111,7 +111,7 @@ public class DistrictRepository {
                     mongoId
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -120,7 +120,7 @@ public class DistrictRepository {
         try {
             DatabaseUtil.executeUpdate(sql, mongoId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 

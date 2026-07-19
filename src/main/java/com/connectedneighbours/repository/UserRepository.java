@@ -115,7 +115,7 @@ public class UserRepository {
             List<User> users = DatabaseUtil.executeQuery(sql, this::extractUser, mongoId);
             return users.isEmpty() ? Optional.empty() : Optional.of(users.get(0));
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
             return Optional.empty();
         }
     }
@@ -150,7 +150,7 @@ public class UserRepository {
                     baseUpdatedAt
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -173,7 +173,7 @@ public class UserRepository {
                     mongoId
             );
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
@@ -182,7 +182,7 @@ public class UserRepository {
         try {
             DatabaseUtil.executeUpdate(sql, mongoId);
         } catch (SQLException e) {
-            e.printStackTrace();
+            LOG.log(Level.SEVERE, "Erreur SQL: " + sql, e);
         }
     }
 
