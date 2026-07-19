@@ -10,6 +10,7 @@ import com.connectedneighbours.model.User;
 import com.connectedneighbours.repository.AlertRepository;
 import com.connectedneighbours.repository.IncidentRepository;
 import com.connectedneighbours.repository.StatisticRepository;
+import com.connectedneighbours.service.IncidentService;
 import com.connectedneighbours.service.SyncService;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -63,6 +64,7 @@ public class DashboardController extends BaseController {
     //  Repositories
     private IncidentRepository incidentRepo;
     private AlertRepository alertRepo;
+    private IncidentService incidentService;
 
     public DashboardController() {
     }
@@ -71,6 +73,7 @@ public class DashboardController extends BaseController {
         super(appContext, syncService);
         this.incidentRepo = new IncidentRepository();
         this.alertRepo = new AlertRepository();
+        this.incidentService = new IncidentService(this.incidentRepo);
     }
 
     @FXML
@@ -80,6 +83,9 @@ public class DashboardController extends BaseController {
         }
         if (alertRepo == null) {
             alertRepo = new AlertRepository();
+        }
+        if (incidentService == null) {
+            incidentService = new IncidentService(incidentRepo);
         }
         setupTable();
         loadData();
@@ -283,8 +289,9 @@ public class DashboardController extends BaseController {
 
     @FXML
     public void onNewIncidentClick() {
-        // TODO : ouvrir une dialog de création d'incident
-        System.out.println("[TODO] Créer un nouvel incident");
+        NewIncidentDialog
+                .show(incidentsTable.getScene().getWindow(), incidentService, appContext)
+                .ifPresent(created -> loadData());
     }
 
     //  Helpers couleurs alertes 
