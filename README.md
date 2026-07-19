@@ -310,15 +310,15 @@ L'architecture de plugins repose sur `java.util.ServiceLoader` avec un chargemen
 1. **Interface `Plugin`** : definit les methodes `getName()`, `getVersion()`, `initialize()`, `execute(Object)`,
    `shutdown()`.
 2. **`PluginManager`** : charge les plugins built-in declares dans
-   `META-INF/services/com.connectedneighbours.plugin.Plugin`, plus les plugins externes
-   (JARs deposes dans le dossier `./plugins/`).
+   `META-INF/services/com.connectedneighbours.plugin.Plugin`, plus les plugins externes (JARs deposes dans le dossier
+   `./plugins/`).
 3. **Plugins fournis** :
     - `HelloPlugin` : plugin de validation du cycle de vie `ServiceLoader`.
     - `ExportStatsPlugin` : export des statistiques en CSV ou PDF (echafaude — fichier vide).
-    - `SocialAnalysisPlugin` : analyse des interactions sociales (implante — UI JavaFX avec
-      onglets, TableView et PieChart, appels API via `ApiClient`).
-    - `LocalCalendarPlugin` : calendrier des evenements du quartier (implante — UI JavaFX avec
-      TableView + filtre, donnees API en asynchrone).
+    - `SocialAnalysisPlugin` : analyse des interactions sociales (implante — UI JavaFX avec onglets, TableView et
+      PieChart, appels API via `ApiClient`).
+    - `LocalCalendarPlugin` : calendrier des evenements du quartier (implante — UI JavaFX avec TableView + filtre,
+      donnees API en asynchrone).
 
 ---
 
@@ -328,7 +328,6 @@ L'application supporte trois langues via `ResourceBundle` :
 
 - Francais (`messages_fr.properties`)
 - Anglais (`messages_en.properties`)
-- Espagnol (`messages_es.properties`)
 
 Le changement de langue se fait a chaud depuis l'ecran des parametres via une `ComboBox`.
 
@@ -362,19 +361,18 @@ mvn test
 - `IncidentService` (CRUD, validation, gestion du flag synced)
 - `SyncService` (push/pull, scheduler, detection connexion, resolution de conflits Last-Write-Wins)
 - Dashboard (`dashboard.fxml` + `DashboardController`) — cartes stats, tableau incidents, alertes, barre de sync
-- Ecran Incidents (`incidents.fxml` + `IncidentController`, 609 lignes) — `TableView` complete avec 10 colonnes,
-  filtres (statut, categorie), double-clic edition, creation, historique
+- Ecran Incidents (`incidents.fxml` + `IncidentController`, 609 lignes) — `TableView` complete avec 10 colonnes, filtres
+  (statut, categorie), double-clic edition, creation, historique
 - Ecran Statistiques (`statistics.fxml` + `StatisticsController`, 129 lignes) — 5 cartes metriques (utilisateurs,
   annonces, evenements, votes, incidents), 2 PieCharts (incidents par statut et par categorie), `StatisticRepository`
   consomme
-- Parametres API (`settings.fxml` + `SettingsController`, 393 lignes) — config API, test de connexion,
-  themes, langue
+- Parametres API (`settings.fxml` + `SettingsController`, 393 lignes) — config API, test de connexion, themes, langue
 - `BaseController` — classe parente avec barre de sync mutualisee, hook `onSyncSuccess()`, re-login automatique
 - SSO complet (`SsoAuthService`, `CallbackServer`, `JwtVerifier`)
 - `ThemeManager` + themes clair/sombre + support themes personnalises via dossier `./themes/`
 - Tous les FXML refactores : styles inline → `styleClass` du vocabulaire CSS partage
-- `PluginManager` (210 lignes) — chargement hybride (built-in `ServiceLoader` + JARs externes `./plugins/`),
-  cycle de vie complet (init/execute/shutdown), gestion d'erreurs isolee par plugin
+- `PluginManager` (210 lignes) — chargement hybride (built-in `ServiceLoader` + JARs externes `./plugins/`), cycle de
+  vie complet (init/execute/shutdown), gestion d'erreurs isolee par plugin
 - `HelloPlugin` — plugin de validation du cycle de vie
 - `SocialAnalysisPlugin` (414 lignes) — UI JavaFX (TabPane, TableView, PieChart) + appels API
   `/api/social/...` (interactions, top contributeurs)

@@ -2,6 +2,7 @@ package com.connectedneighbours.plugin.plugins;
 
 import com.connectedneighbours.AppContext;
 import com.connectedneighbours.config.JacksonConfig;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.plugin.Plugin;
 import com.connectedneighbours.theme.ThemeManager;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -14,6 +15,7 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
@@ -47,7 +49,7 @@ public class LocalCalendarPlugin implements Plugin {
         }
         Platform.runLater(() -> {
             Stage stage = new Stage();
-            stage.setTitle("Calendrier local — Connected Neighbours");
+            stage.setTitle(I18nManager.tr("plugin.calendar.window.title"));
             stage.setMinWidth(950);
             stage.setMinHeight(600);
 
@@ -57,16 +59,18 @@ public class LocalCalendarPlugin implements Plugin {
 
             VBox header = new VBox(12);
             header.setPadding(new Insets(0, 0, 8, 0));
-            Label title = new Label("Calendrier des événements du quartier");
+            Label title = new Label(I18nManager.tr("plugin.calendar.header.title"));
             title.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
             header.getChildren().add(title);
 
             HBox filters = new HBox(12);
-            Label filterLabel = new Label("Filtrer par statut :");
+            Label filterLabel = new Label(I18nManager.tr("plugin.calendar.filter.label"));
             filterLabel.setStyle("-fx-font-size: 13px;");
             ComboBox<String> statusFilter = new ComboBox<>();
-            statusFilter.getItems().addAll("Tous", "upcoming", "ongoing", "completed", "cancelled");
-            statusFilter.setValue("Tous");
+            statusFilter.getItems().addAll("all", "upcoming", "ongoing", "completed", "cancelled");
+            statusFilter.setCellFactory(lv -> eventStatusCell());
+            statusFilter.setButtonCell(eventStatusCell());
+            statusFilter.setValue("all");
             statusFilter.setStyle("-fx-font-size: 12px;");
             filters.getChildren().addAll(filterLabel, statusFilter);
             header.getChildren().add(filters);
@@ -76,15 +80,21 @@ public class LocalCalendarPlugin implements Plugin {
             TableView<JsonNode> table = new TableView<>();
             table.setPrefHeight(350);
 
-            TableColumn<JsonNode, String> dateCol = col("Date", "eventDate");
+            TableColumn<JsonNode, String> dateCol = col(I18nManager.tr("common.field.date"), "eventDate");
             dateCol.setPrefWidth(170);
-            TableColumn<JsonNode, String> titleCol = col("Titre", "title");
+            TableColumn<JsonNode, String> titleCol = col(I18nManager.tr("plugin.social.col.title"), "title");
             titleCol.setPrefWidth(220);
-            TableColumn<JsonNode, String> locCol = col("Lieu", "location");
+            TableColumn<JsonNode, String> locCol = col(I18nManager.tr("plugin.social.col.location"), "location");
             locCol.setPrefWidth(180);
-            TableColumn<JsonNode, String> statusCol = col("Statut", "status");
+            TableColumn<JsonNode, String> statusCol = new TableColumn<>(I18nManager.tr("common.field.status"));
+            statusCol.setCellValueFactory(d -> {
+                JsonNode n = d.getValue();
+                String val = (n != null && n.has("status") && !n.get("status").isNull())
+                        ? n.get("status").asText() : "";
+                return new SimpleStringProperty(eventStatusLabel(val));
+            });
             statusCol.setPrefWidth(100);
-            TableColumn<JsonNode, String> seatsCol = new TableColumn<>("Places");
+            TableColumn<JsonNode, String> seatsCol = new TableColumn<>(I18nManager.tr("plugin.calendar.col.seats"));
             seatsCol.setCellValueFactory(d -> {
                 JsonNode n = d.getValue();
                 int rem = (n != null && n.has("remainingSeats")) ? n.get("remainingSeats").asInt() : 0;
@@ -92,7 +102,7 @@ public class LocalCalendarPlugin implements Plugin {
                 return new SimpleStringProperty(rem + " / " + tot);
             });
             seatsCol.setPrefWidth(80);
-            TableColumn<JsonNode, String> regCol = new TableColumn<>("Inscrits");
+            TableColumn<JsonNode, String> regCol = new TableColumn<>(I18nManager.tr("plugin.calendar.col.registrants"));
             regCol.setCellValueFactory(d -> {
                 JsonNode n = d.getValue();
                 int cnt = (n != null && n.has("registrants")) ? n.get("registrants").size() : 0;
@@ -125,9 +135,9 @@ public class LocalCalendarPlugin implements Plugin {
                     return;
                 }
                 detailTitle.setText(sel.has("title") ? sel.get("title").asText() : "");
-                detailMeta.setText(String.format("Lieu : %s  |  Statut : %s  |  Date : %s",
+                detailMeta.setText(I18nManager.tr("plugin.calendar.detail.meta",
                         sel.has("location") ? sel.get("location").asText() : "-",
-                        sel.has("status") ? sel.get("status").asText() : "-",
+                        sel.has("status") ? eventStatusLabel(sel.get("status").asText()) : "-",
                         sel.has("eventDate") ? sel.get("eventDate").asText() : "-"));
                 detailDesc.setText(sel.has("description") ? sel.get("description").asText() : "");
                 detailPanel.setVisible(true);
@@ -138,7 +148,7 @@ public class LocalCalendarPlugin implements Plugin {
             VBox.setVgrow(table, Priority.ALWAYS);
             root.setCenter(centerBox);
 
-            Label loadingLabel = new Label("Chargement des événements...");
+            Label loadingLabel = new Label(I18nManager.tr("plugin.calendar.loading"));
             loadingLabel.setStyle("-fx-font-size: 14px; -fx-padding: 20;");
             root.setCenter(loadingLabel);
 
@@ -147,7 +157,7 @@ public class LocalCalendarPlugin implements Plugin {
                         ObservableList<JsonNode> masterList = FXCollections.observableArrayList(allEvents);
 
                         statusFilter.valueProperty().addListener((obs, oldVal, newVal) -> {
-                            if ("Tous".equals(newVal)) {
+                            if ("all".equals(newVal)) {
                                 table.setItems(masterList);
                             } else {
                                 ObservableList<JsonNode> filtered = FXCollections.observableArrayList();
@@ -197,6 +207,32 @@ public class LocalCalendarPlugin implements Plugin {
             return da.compareTo(db);
         });
         return all;
+    }
+
+    /**
+     * Libellé traduit d'un statut d'événement (codes API stables :
+     * all/upcoming/ongoing/completed/cancelled) — utilisé pour la ComboBox de
+     * filtre, la colonne "Statut" du tableau et le texte de détail.
+     */
+    private static String eventStatusLabel(String code) {
+        return switch (code != null ? code : "") {
+            case "all" -> I18nManager.tr("plugin.calendar.status.all");
+            case "upcoming" -> I18nManager.tr("plugin.calendar.status.upcoming");
+            case "ongoing" -> I18nManager.tr("plugin.calendar.status.ongoing");
+            case "completed" -> I18nManager.tr("plugin.calendar.status.completed");
+            case "cancelled" -> I18nManager.tr("plugin.calendar.status.cancelled");
+            default -> code;
+        };
+    }
+
+    private static ListCell<String> eventStatusCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : eventStatusLabel(item));
+            }
+        };
     }
 
     private static TableColumn<JsonNode, String> col(String header, String field) {

@@ -1,6 +1,7 @@
 package com.connectedneighbours.controller;
 
 import com.connectedneighbours.AppContext;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.District;
 import com.connectedneighbours.model.Incident;
 import com.connectedneighbours.model.User;
@@ -237,32 +238,66 @@ public class IncidentController extends BaseController {
         };
     }
 
-    // Filtres 
+    // Filtres
+
+    /** Sentinelle technique pour "Toutes les catégories" (catégorie = donnée utilisateur, non traduite). */
+    private static final String CATEGORY_ALL = "";
+
     private void setupFilters() {
-        // Statut
+        // Statut — valeurs techniques stables (codes API), libellé traduit via une cell factory
+        // (voir statusLabel) plutôt que stocker le libellé traduit comme valeur de la ComboBox :
+        // ça évite de casser le filtrage quand la langue change.
         filterStatus.setItems(FXCollections.observableArrayList(
-                "Tous", "Ouvert", "En cours", "Résolu", "Fermé"
+                "all", "open", "in_progress", "resolved", "closed"
         ));
-        filterStatus.setValue("Tous");
+        filterStatus.setCellFactory(lv -> statusFilterCell());
+        filterStatus.setButtonCell(statusFilterCell());
+        filterStatus.setValue("all");
         filterStatus.setOnAction(e -> applyFilters());
 
         // Catégorie
-        filterCategory.setItems(FXCollections.observableArrayList("Toutes"));
-        filterCategory.setValue("Toutes");
+        filterCategory.setCellFactory(lv -> categoryFilterCell());
+        filterCategory.setButtonCell(categoryFilterCell());
+        filterCategory.setItems(FXCollections.observableArrayList(CATEGORY_ALL));
+        filterCategory.setValue(CATEGORY_ALL);
         filterCategory.setOnAction(e -> applyFilters());
+    }
+
+    private ListCell<String> statusFilterCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : statusLabel(item));
+            }
+        };
+    }
+
+    private ListCell<String> categoryFilterCell() {
+        return new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else {
+                    setText(CATEGORY_ALL.equals(item) ? I18nManager.tr("incidents.category.all") : item);
+                }
+            }
+        };
     }
 
     private void refreshCategoryFilter() {
         String current = filterCategory.getValue();
         List<String> categories = incidentService.getDistinctCategories();
-        ObservableList<String> items = FXCollections.observableArrayList("Toutes");
+        ObservableList<String> items = FXCollections.observableArrayList(CATEGORY_ALL);
         items.addAll(categories);
         filterCategory.setItems(items);
         // Restore selection if still valid
         if (current != null && items.contains(current)) {
             filterCategory.setValue(current);
         } else {
-            filterCategory.setValue("Toutes");
+            filterCategory.setValue(CATEGORY_ALL);
         }
     }
 
@@ -274,37 +309,29 @@ public class IncidentController extends BaseController {
 
         List<Incident> filtered = allIncidents.stream()
                 .filter(i -> {
-                    if (statusFilter == null || "Tous".equals(statusFilter)) return true;
-                    String statusValue = statusFilterToValue(statusFilter);
-                    return statusValue.equals(i.getStatus());
+                    if (statusFilter == null || "all".equals(statusFilter)) return true;
+                    return statusFilter.equals(i.getStatus());
                 })
                 .filter(i -> {
-                    if (categoryFilter == null || "Toutes".equals(categoryFilter)) return true;
+                    if (categoryFilter == null || CATEGORY_ALL.equals(categoryFilter)) return true;
                     return categoryFilter.equals(i.getCategory());
                 })
                 .sorted(Incident.BY_CREATED_AT_DESC)
                 .collect(Collectors.toList());
 
         incidentsTable.setItems(FXCollections.observableArrayList(filtered));
-        countLabel.setText(filtered.size() + " incident" + (filtered.size() > 1 ? "s" : ""));
-    }
-
-    private String statusFilterToValue(String label) {
-        return switch (label) {
-            case "Ouvert" -> "open";
-            case "En cours" -> "in_progress";
-            case "Résolu" -> "resolved";
-            case "Fermé" -> "closed";
-            default -> "";
-        };
+        countLabel.setText(filtered.size() == 1
+                ? I18nManager.tr("incidents.count.singular", filtered.size())
+                : I18nManager.tr("incidents.count.plural", filtered.size()));
     }
 
     private String statusLabel(String value) {
         return switch (value != null ? value : "") {
-            case "open" -> "Ouvert";
-            case "in_progress" -> "En cours";
-            case "resolved" -> "Résolu";
-            case "closed" -> "Fermé";
+            case "all" -> I18nManager.tr("incidents.status.all");
+            case "open" -> I18nManager.tr("incidents.status.open");
+            case "in_progress" -> I18nManager.tr("incidents.status.inProgress");
+            case "resolved" -> I18nManager.tr("incidents.status.resolved");
+            case "closed" -> I18nManager.tr("incidents.status.closed");
             default -> value;
         };
     }
@@ -332,13 +359,13 @@ public class IncidentController extends BaseController {
     @FXML
     public void onNewIncidentClick() {
         Dialog<Incident> dialog = new Dialog<>();
-        dialog.setTitle("Nouvel incident");
-        dialog.setHeaderText("Créer un nouvel incident");
+        dialog.setTitle(I18nManager.tr("incidents.newDialog.title"));
+        dialog.setHeaderText(I18nManager.tr("incidents.newDialog.header"));
         dialog.initOwner(incidentsTable.getScene().getWindow());
         dialog.initModality(Modality.WINDOW_MODAL);
 
         // Boutons
-        ButtonType createType = new ButtonType("Créer", ButtonBar.ButtonData.OK_DONE);
+        ButtonType createType = new ButtonType(I18nManager.tr("common.action.create"), ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(createType, ButtonType.CANCEL);
 
         // Formulaire
@@ -348,17 +375,17 @@ public class IncidentController extends BaseController {
         grid.setPadding(new Insets(20, 24, 10, 24));
 
         TextField categoryField = new TextField();
-        categoryField.setPromptText("Ex: Bruit, Voirie, Propreté…");
+        categoryField.setPromptText(I18nManager.tr("incidents.newDialog.category.prompt"));
         categoryField.setPrefWidth(300);
 
         TextArea descriptionField = new TextArea();
-        descriptionField.setPromptText("Description de l'incident…");
+        descriptionField.setPromptText(I18nManager.tr("incidents.newDialog.description.prompt"));
         descriptionField.setPrefRowCount(4);
         descriptionField.setWrapText(true);
 
-        grid.add(new Label("Catégorie *"), 0, 0);
+        grid.add(new Label(I18nManager.tr("incidents.newDialog.field.category")), 0, 0);
         grid.add(categoryField, 1, 0);
-        grid.add(new Label("Description *"), 0, 1);
+        grid.add(new Label(I18nManager.tr("incidents.newDialog.field.description")), 0, 1);
         grid.add(descriptionField, 1, 1);
 
         dialog.getDialogPane().setContent(grid);
@@ -385,7 +412,7 @@ public class IncidentController extends BaseController {
                             reporterId
                     );
                 } catch (Exception e) {
-                    showError("Erreur de création : " + e.getMessage());
+                    showError(I18nManager.tr("incidents.newDialog.error", e.getMessage()));
                     return null;
                 }
             }
@@ -408,12 +435,12 @@ public class IncidentController extends BaseController {
         Incident fresh = incidentService.getIncidentById(incident.getId()).orElse(incident);
 
         Dialog<Boolean> dialog = new Dialog<>();
-        dialog.setTitle("Détail — Incident");
-        dialog.setHeaderText("ID : " + fresh.getId());
+        dialog.setTitle(I18nManager.tr("incidents.editDialog.title"));
+        dialog.setHeaderText(I18nManager.tr("incidents.editDialog.header", fresh.getId()));
         dialog.initOwner(incidentsTable.getScene().getWindow());
         dialog.initModality(Modality.WINDOW_MODAL);
 
-        ButtonType saveType = new ButtonType("Enregistrer", ButtonBar.ButtonData.OK_DONE);
+        ButtonType saveType = new ButtonType(I18nManager.tr("common.action.save"), ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
 
         // Formulaire
@@ -446,8 +473,8 @@ public class IncidentController extends BaseController {
         // Sentinelle pour "— Non assigné —"
         User emptyUser = new User();
         emptyUser.setId(null);
-        emptyUser.setFirstName("— Non assigné");
-        emptyUser.setLastName("—");
+        emptyUser.setFirstName(I18nManager.tr("incidents.editDialog.assignedTo.none"));
+        emptyUser.setLastName("");
 
         ObservableList<User> assignOptions = FXCollections.observableArrayList();
         assignOptions.add(emptyUser);
@@ -461,7 +488,7 @@ public class IncidentController extends BaseController {
             @Override
             public String toString(User user) {
                 if (user == null) return "";
-                if (user.getId() == null) return "— Non assigné —";
+                if (user.getId() == null) return I18nManager.tr("incidents.editDialog.assignedTo.none");
                 String fn = user.getFirstName() != null ? user.getFirstName() : "";
                 String ln = user.getLastName() != null ? user.getLastName() : "";
                 return (fn + " " + ln).trim();
@@ -507,33 +534,35 @@ public class IncidentController extends BaseController {
                 fresh.getCreatedAt() != null ? fresh.getCreatedAt().format(INCIDENT_DATE_FMT) : "—");
         Label updatedLabel = new Label(
                 fresh.getUpdatedAt() != null ? fresh.getUpdatedAt().format(INCIDENT_DATE_FMT) : "—");
-        Label syncedLabel = new Label(fresh.isSynced() ? "✓ Synchronisé" : "✗ Non synchronisé");
+        Label syncedLabel = new Label(fresh.isSynced()
+                ? I18nManager.tr("incidents.editDialog.synced.yes")
+                : I18nManager.tr("incidents.editDialog.synced.no"));
         syncedLabel.setStyle(fresh.isSynced()
                 ? "-fx-text-fill: #27ae60; -fx-font-weight: bold;"
                 : "-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
 
         int row = 0;
-        grid.add(new Label("Statut"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.status")), 0, row);
         grid.add(statusBox, 1, row++);
-        grid.add(new Label("Catégorie"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.category")), 0, row);
         grid.add(categoryField, 1, row++);
-        grid.add(new Label("Description"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.description")), 0, row);
         grid.add(descriptionField, 1, row++);
-        grid.add(new Label("Assigné à"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.assignedTo")), 0, row);
         grid.add(assignedToBox, 1, row++);
 
         grid.add(new Separator(), 0, row++);
         grid.add(new Separator(), 1, row - 1);
 
-        grid.add(new Label("Reporter"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.reporter")), 0, row);
         grid.add(reporterLabel, 1, row++);
-        grid.add(new Label("District"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.district")), 0, row);
         grid.add(districtLabel, 1, row++);
-        grid.add(new Label("Créé le"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.createdAt")), 0, row);
         grid.add(createdLabel, 1, row++);
-        grid.add(new Label("Modifié le"), 0, row);
+        grid.add(new Label(I18nManager.tr("common.field.updatedAt")), 0, row);
         grid.add(updatedLabel, 1, row++);
-        grid.add(new Label("Synchronisation"), 0, row);
+        grid.add(new Label(I18nManager.tr("incidents.editDialog.field.synchronization")), 0, row);
         grid.add(syncedLabel, 1, row);
 
         dialog.getDialogPane().setContent(grid);
@@ -550,7 +579,7 @@ public class IncidentController extends BaseController {
                     incidentService.updateIncident(fresh);
                     return true;
                 } catch (Exception e) {
-                    showError("Erreur de sauvegarde : " + e.getMessage());
+                    showError(I18nManager.tr("incidents.editDialog.saveError", e.getMessage()));
                     return false;
                 }
             }
@@ -593,17 +622,17 @@ public class IncidentController extends BaseController {
     private String resolveUserName(String userId) {
         if (userId == null || userId.isBlank()) return "—";
         User u = usersMap.get(userId);
-        if (u == null) return "Inconnu";
+        if (u == null) return I18nManager.tr("common.value.unknown");
         String fn = u.getFirstName() != null ? u.getFirstName() : "";
         String ln = u.getLastName() != null ? u.getLastName() : "";
         String name = (fn + " " + ln).trim();
-        return name.isEmpty() ? "Inconnu" : name;
+        return name.isEmpty() ? I18nManager.tr("common.value.unknown") : name;
     }
 
     private String resolveDistrictName(String districtId) {
         if (districtId == null || districtId.isBlank()) return "—";
         District d = districtsMap.get(districtId);
-        if (d == null) return "Inconnu";
-        return d.getName() != null ? d.getName() : "Inconnu";
+        if (d == null) return I18nManager.tr("common.value.unknown");
+        return d.getName() != null ? d.getName() : I18nManager.tr("common.value.unknown");
     }
 }

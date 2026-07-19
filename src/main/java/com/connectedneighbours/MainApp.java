@@ -4,6 +4,8 @@ import com.connectedneighbours.config.SessionConfig;
 import com.connectedneighbours.controller.DashboardController;
 import com.connectedneighbours.controller.HeaderController;
 import com.connectedneighbours.controller.IncidentController;
+import com.connectedneighbours.controller.Page;
+import com.connectedneighbours.i18n.I18nManager;
 import com.connectedneighbours.model.User;
 import com.connectedneighbours.plugin.PluginManager;
 import com.connectedneighbours.repository.DatabaseManager;
@@ -25,6 +27,7 @@ public class MainApp extends Application {
     private AppContext appContext;
     private SyncService syncService;
     private Stage primaryStage;
+    private Page currentPage;
 
     public static void main(String[] args) {
         launch(args);
@@ -50,7 +53,8 @@ public class MainApp extends Application {
         }
 
         // Affiche immédiatement une fenêtre d'accueil (le navigateur va s'ouvrir pour le login).
-        showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
+        showWaiting(I18nManager.tr("mainapp.waiting.title.connecting"),
+                I18nManager.tr("mainapp.waiting.message.connecting"));
 
         // Lance le login navigateur sur un thread d'arrière-plan.
         Task<User> login = new Task<>() {
@@ -68,8 +72,8 @@ public class MainApp extends Application {
         login.setOnFailed(e -> {
             Throwable t = login.getException();
             String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
-            showWaiting("Connexion échouée",
-                    "Impossible de s'authentifier : " + msg + "\nFermez la fenêtre pour quitter.");
+            showWaiting(I18nManager.tr("mainapp.waiting.title.failed"),
+                    I18nManager.tr("mainapp.waiting.message.failed", msg));
         });
         Thread t = new Thread(login, "sso-browser-login");
         t.setDaemon(true);
@@ -104,7 +108,7 @@ public class MainApp extends Application {
             root.getStyleClass().add("app-bg");
             Scene scene = new Scene(root, 480, 200);
             ThemeManager.applyTheme(scene);
-            primaryStage.setTitle(title + " — Connected Neighbours Admin");
+            primaryStage.setTitle(I18nManager.tr("mainapp.window.title.suffixed", title));
             primaryStage.setScene(scene);
             primaryStage.show();
         });
@@ -118,6 +122,7 @@ public class MainApp extends Application {
                 FXMLLoader loader = new FXMLLoader(
                         getClass().getResource("/com/connectedneighbours/fxml/dashboard.fxml")
                 );
+                loader.setResources(I18nManager.getBundle());
                 loader.setControllerFactory(cls -> {
                     if (cls == DashboardController.class)
                         return new DashboardController(appContext, syncService);
@@ -134,12 +139,14 @@ public class MainApp extends Application {
                 Scene scene = new Scene(root, 1280, 800);
                 ThemeManager.applyTheme(scene);
 
-                primaryStage.setTitle("Connected Neighbours — Admin");
+                primaryStage.setTitle(I18nManager.tr("mainapp.window.title.dashboard"));
                 primaryStage.setScene(scene);
                 primaryStage.setUserData(this);
                 primaryStage.show();
+
+                currentPage = Page.DASHBOARD;
             } catch (Exception e) {
-                throw new RuntimeException("Impossible de charger dashboard.fxml", e);
+                throw new RuntimeException(I18nManager.tr("mainapp.loadError.dashboard"), e);
             }
         });
     }
@@ -152,6 +159,7 @@ public class MainApp extends Application {
                 FXMLLoader loader = new FXMLLoader(
                         getClass().getResource("/com/connectedneighbours/fxml/incidents.fxml")
                 );
+                loader.setResources(I18nManager.getBundle());
                 loader.setControllerFactory(cls -> {
                     if (cls == IncidentController.class)
                         return new IncidentController(appContext, syncService);
@@ -168,14 +176,29 @@ public class MainApp extends Application {
                 Scene scene = new Scene(root, 1280, 800);
                 ThemeManager.applyTheme(scene);
 
-                primaryStage.setTitle("Incidents — Connected Neighbours Admin");
+                primaryStage.setTitle(I18nManager.tr("mainapp.window.title.incidents"));
                 primaryStage.setScene(scene);
                 primaryStage.setUserData(this);
                 primaryStage.show();
+
+                currentPage = Page.INCIDENTS;
             } catch (Exception e) {
-                throw new RuntimeException("Impossible de charger incidents.fxml", e);
+                throw new RuntimeException(I18nManager.tr("mainapp.loadError.incidents"), e);
             }
         });
+    }
+
+    /**
+     * Reconstruit l'écran actuellement affiché (dashboard ou incidents) à
+     * partir de son FXML, avec la langue courante — utilisé pour le
+     * changement de langue "à chaud" depuis les Paramètres.
+     */
+    public void reloadCurrentScreen() {
+        if (currentPage == Page.INCIDENTS) {
+            showIncidents();
+        } else {
+            showDashboard();
+        }
     }
 
     /**
@@ -201,7 +224,8 @@ public class MainApp extends Application {
         }
         appContext.logout();
 
-        showWaiting("Connexion", "Ouverture du navigateur pour la connexion…");
+        showWaiting(I18nManager.tr("mainapp.waiting.title.connecting"),
+                I18nManager.tr("mainapp.waiting.message.connecting"));
 
         Task<User> login = new Task<>() {
             @Override
@@ -218,8 +242,8 @@ public class MainApp extends Application {
         login.setOnFailed(e -> {
             Throwable t = login.getException();
             String msg = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
-            showWaiting("Connexion échouée",
-                    "Impossible de s'authentifier : " + msg + "\nFermez la fenêtre pour quitter.");
+            showWaiting(I18nManager.tr("mainapp.waiting.title.failed"),
+                    I18nManager.tr("mainapp.waiting.message.failed", msg));
         });
         Thread t = new Thread(login, "sso-browser-login");
         t.setDaemon(true);
