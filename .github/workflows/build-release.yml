@@ -196,7 +196,7 @@ jobs:
           cp "target/${{ steps.locate-jar.outputs.jar-name }}" "target/${{ matrix.artifact-name }}.jar"
 
       - name: Upload Fat JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.artifact-name }}-jar
           path: target/${{ matrix.artifact-name }}.jar
